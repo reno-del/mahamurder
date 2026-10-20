@@ -15,11 +15,13 @@ interface Filter {
   q: string;
   genre: string;
   size: string;
+  owned: "" | "yes" | "no";
+  localized: "" | "yes" | "no";
   sort: SortKey;
 }
 
 // 다른 페이지에 다녀와도 검색 조건이 유지되도록 모듈에 보관
-let savedFilter: Filter = { q: "", genre: "", size: "", sort: "rating" };
+let savedFilter: Filter = { q: "", genre: "", size: "", owned: "", localized: "", sort: "rating" };
 
 function UpcomingStrip() {
   const { user, events } = useApp();
@@ -52,14 +54,23 @@ function UpcomingStrip() {
 
 function GameCard({ game: g, onOpen }: { game: Game; onOpen: () => void }) {
   const { me } = useApp();
-  const { friendRating, playedBy } = useGameHelpers();
+  const { friendRating, playedBy, copiesOf } = useGameHelpers();
   const fr = friendRating(g.id);
   const n = playedBy(g.id).length;
+  const copies = copiesOf(g);
+  const free = copies.filter((c) => !c.rental).length;
   return (
     <article className="card game-card" tabIndex={0} onClick={onOpen} onKeyDown={(e) => e.key === "Enter" && onOpen()}>
       <Cover game={g} />
       <div className="game-body">
         <div className="badges">
+          {g.localized === false && <span className="badge badge-unofficial">미정발</span>}
+          {me?.owned?.[g.id] ? (
+            <span className="badge badge-owned">📦 내 게임</span>
+          ) : (
+            copies.length > 0 &&
+            (free ? <span className="badge badge-owned">구비 {copies.length}</span> : <span className="badge badge-rented">모두 대여 중</span>)
+          )}
           {me?.played?.[g.id] && <span className="badge badge-done">플레이함</span>}
           {me?.liked?.[g.id] && <span className="badge badge-like">♥ 선호</span>}
         </div>
@@ -102,7 +113,7 @@ function GameCard({ game: g, onOpen }: { game: Game; onOpen: () => void }) {
 
 export function GamesPage() {
   const { user, games } = useApp();
-  const { allGenres, playedBy } = useGameHelpers();
+  const { allGenres, playedBy, ownersOf } = useGameHelpers();
   const { openModal } = useModal();
   const [filter, setFilter] = useState<Filter>(savedFilter);
   useEffect(() => {
@@ -124,7 +135,9 @@ export function GamesPage() {
       (g) =>
         (!q || [g.name, g.publisher, g.description, ...(g.genres || [])].join(" ").toLowerCase().includes(q)) &&
         (!filter.genre || (g.genres || []).includes(filter.genre)) &&
-        (!size || ((g.minPlayers || 0) <= size && size <= (g.maxPlayers || g.minPlayers || 99)))
+        (!size || ((g.minPlayers || 0) <= size && size <= (g.maxPlayers || g.minPlayers || 99))) &&
+        (!filter.owned || ownersOf(g.id).length > 0 === (filter.owned === "yes")) &&
+        (!filter.localized || (g.localized !== false) === (filter.localized === "yes"))
     )
     .sort(sorters[filter.sort]);
 
@@ -162,7 +175,17 @@ export function GamesPage() {
             </option>
           ))}
         </select>
-        <select className="input" value={filter.sort} onChange={(e) => set("sort", e.target.value as SortKey)}>
+        <select className="input" value={filter.owned} onChange={(e) => set("owned", e.target.value as Filter["owned"])}>
+          <option value="">구비 전체</option>
+          <option value="yes">구비 중</option>
+          <option value="no">구비 안 됨</option>
+        </select>
+        <select className="input" value={filter.localized} onChange={(e) => set("localized", e.target.value as Filter["localized"])}>
+          <option value="">정발 전체</option>
+          <option value="yes">정발됨</option>
+          <option value="no">미정발</option>
+        </select>
+        <select className="input" value={filter.sort}onChange={(e) => set("sort", e.target.value as SortKey)}>
           <option value="rating">평점순</option>
           <option value="release">최신 출시순</option>
           <option value="priceAsc">낮은 가격순</option>

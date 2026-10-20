@@ -11,12 +11,13 @@ import { GameDetail } from "../games/GameDetail";
 import type { Game, Profile } from "../../types";
 
 const LENGTHS = ["~2시간", "2~4시간", "4시간 이상", "상관없음"];
-type Tab = "all" | "played" | "todo" | "liked";
+type Tab = "all" | "played" | "todo" | "liked" | "owned";
 const TABS: [Tab, string][] = [
   ["all", "전체"],
   ["played", "플레이함"],
   ["todo", "안 해봄"],
   ["liked", "선호"],
+  ["owned", "보유"],
 ];
 let savedTab: Tab = "all";
 
@@ -101,12 +102,13 @@ function Recommend({ me, onOpen }: { me: Profile; onOpen: (id: string) => void }
 
 function Checklist({ me, tab, onOpen }: { me: Profile; tab: Tab; onOpen: (id: string) => void }) {
   const { games } = useApp();
-  const { togglePlayed, toggleLiked, setRating } = useGameHelpers();
+  const { togglePlayed, toggleLiked, setRating, toggleOwned } = useGameHelpers();
   const keep: Record<Tab, (g: Game) => boolean> = {
     all: () => true,
     played: (g) => !!me.played?.[g.id],
     todo: (g) => !me.played?.[g.id],
     liked: (g) => !!me.liked?.[g.id],
+    owned: (g) => !!me.owned?.[g.id],
   };
   const list = games.filter(keep[tab]).sort((a, b) => cleanName(a.name).localeCompare(cleanName(b.name), "ko"));
   if (!list.length) return <p className="muted small">해당하는 게임이 없어요.</p>;
@@ -115,6 +117,7 @@ function Checklist({ me, tab, onOpen }: { me: Profile; tab: Tab; onOpen: (id: st
       {list.map((g) => {
         const p = me.played?.[g.id];
         const liked = me.liked?.[g.id];
+        const owned = me.owned?.[g.id];
         return (
           <li key={g.id}>
             <button className={`check ${p ? "on" : ""}`} aria-label="플레이 여부" onClick={() => togglePlayed(g.id)}>
@@ -139,6 +142,15 @@ function Checklist({ me, tab, onOpen }: { me: Profile; tab: Tab; onOpen: (id: st
                 <span className="muted small">안 해봄</span>
               )}
             </span>
+            <button
+              className={`own-btn ${owned ? "on" : ""}`}
+              aria-label="보유"
+              aria-pressed={!!owned}
+              title={owned ? "보유 중" : "가지고 있어요"}
+              onClick={() => toggleOwned(g)}
+            >
+              📦
+            </button>
             <button className={`heart ${liked ? "on" : ""}`} aria-label="선호" onClick={() => toggleLiked(g.id)}>
               {liked ? "♥" : "♡"}
             </button>
@@ -160,6 +172,7 @@ function Friends() {
           <tr>
             <th>이름</th>
             <th>플레이</th>
+            <th>보유</th>
             <th>선호 장르</th>
             <th>한마디</th>
           </tr>
@@ -169,6 +182,7 @@ function Friends() {
             <tr key={p.id}>
               <td>{displayName(p) || "익명"}</td>
               <td>{Object.keys(p.played || {}).filter((id) => games.some((g) => g.id === id)).length}개</td>
+              <td>{Object.keys(p.owned || {}).filter((id) => games.some((g) => g.id === id)).length}개</td>
               <td>{(p.prefGenres || []).join(", ") || "-"}</td>
               <td className="muted">{p.bio || ""}</td>
             </tr>
@@ -302,7 +316,8 @@ export function MyPage() {
         </div>
         {collapsed ? (
           <p className="muted small">
-            게임 기록 {games.length}개가 숨겨져 있어요. (플레이 {playedIds.length} · 선호 {likedIds.length})
+            게임 기록 {games.length}개가 숨겨져 있어요. (플레이 {playedIds.length} · 선호 {likedIds.length} · 보유{" "}
+            {Object.keys(me.owned || {}).filter((id) => games.some((g) => g.id === id)).length})
           </p>
         ) : (
           <Checklist me={me} tab={tab} onOpen={openDetail} />

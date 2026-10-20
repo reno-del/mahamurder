@@ -15,6 +15,11 @@ service cloud.firestore {
       allow write: if signedIn() && request.auth.uid == uid;
     }
 
+    // 가입하지 않은 친구(게임 보유자): 로그인한 친구는 누구나 보고 관리 가능
+    match /guests/{guestId} {
+      allow read, write: if signedIn();
+    }
+
     // 일정 모집 공지
     match /events/{eventId} {
       allow read: if signedIn();

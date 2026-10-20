@@ -33,6 +33,7 @@ export function GameForm({ game }: { game?: Game }) {
       imageUrl: f.imageUrl.trim(),
       link: f.link.trim(),
       description: f.description.trim(),
+      localized: f.localized === "yes",
     };
     try {
       await store.saveGame(data);
@@ -86,6 +87,13 @@ export function GameForm({ game }: { game?: Game }) {
                 {d}
               </option>
             ))}
+          </select>
+        </label>
+        <label>
+          정발 여부
+          <select className="input" name="localized" defaultValue={g.localized === false ? "no" : "yes"}>
+            <option value="yes">정발됨</option>
+            <option value="no">미정발</option>
           </select>
         </label>
         <label className="full">

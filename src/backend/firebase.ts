@@ -24,7 +24,7 @@ import {
 import { FirebaseError } from "firebase/app";
 import { SEED_GAMES } from "../data/seedGames";
 import type { FirebaseConfig } from "../config";
-import type { AppUser, Game, GameEvent, Profile, Store } from "../types";
+import type { AppUser, Game, GameEvent, Guest, Profile, Store } from "../types";
 
 const toList = <T>(snap: QuerySnapshot) => snap.docs.map((d) => ({ id: d.id, ...d.data() }) as T);
 
@@ -84,6 +84,9 @@ export async function create(config: FirebaseConfig): Promise<Store> {
       await batch.commit();
     },
 
+    rentGame: (id, ownerUid, rental) => updateDoc(doc(db, "games", id), { [`rentals.${ownerUid}`]: rental }),
+    returnGame: (id, ownerUid) => updateDoc(doc(db, "games", id), { [`rentals.${ownerUid}`]: deleteField() }),
+
     // ---------- 프로필 ----------
     watchProfiles(cb) {
       return onSnapshot(collection(db, "users"), (s) => cb(toList<Profile>(s)));
@@ -91,6 +94,18 @@ export async function create(config: FirebaseConfig): Promise<Store> {
     setProfileField(uid, path, value) {
       return updateDoc(doc(db, "users", uid), { [path]: value === null ? deleteField() : value });
     },
+
+    // ---------- 미등록 친구 ----------
+    watchGuests(cb) {
+      return onSnapshot(collection(db, "guests"), (s) => cb(toList<Guest>(s)));
+    },
+    async createGuest(name, createdBy) {
+      await addDoc(collection(db, "guests"), { name, createdBy, createdAt: serverTimestamp() });
+    },
+    setGuestField(id, path, value) {
+      return updateDoc(doc(db, "guests", id), { [path]: value === null ? deleteField() : value });
+    },
+    deleteGuest: (id) => deleteDoc(doc(db, "guests", id)),
 
     // ---------- 일정 ----------
     watchEvents(cb) {

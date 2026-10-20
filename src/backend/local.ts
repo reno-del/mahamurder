@@ -4,11 +4,11 @@ import type { AppUser, Store } from "../types";
 
 type Doc = Record<string, unknown>;
 type Collection = Record<string, Doc>;
-type ListKey = "games" | "users" | "events";
+type ListKey = "games" | "users" | "guests" | "events";
 type Key = ListKey | "me";
 
-const KEY: Record<Key, string> = { games: "mm_games", users: "mm_users", events: "mm_events", me: "mm_me" };
-const listeners: Record<Key, ((v: never) => void)[]> = { games: [], users: [], events: [], me: [] };
+const KEY: Record<Key, string> = { games: "mm_games", users: "mm_users", guests: "mm_guests", events: "mm_events", me: "mm_me" };
+const listeners: Record<Key, ((v: never) => void)[]> = { games: [], users: [], guests: [], events: [], me: [] };
 
 function read<T>(key: Key, fallback: T): T {
   try {
@@ -100,9 +100,31 @@ export async function create(): Promise<Store> {
       write("games", all);
     },
 
+    async rentGame(id, ownerUid, rental) {
+      update("games", id, (g) => setPath(g, `rentals.${ownerUid}`, rental));
+    },
+    async returnGame(id, ownerUid) {
+      update("games", id, (g) => setPath(g, `rentals.${ownerUid}`, null));
+    },
+
     watchProfiles: (cb) => watch("users", cb),
     async setProfileField(uid, path, value) {
       update("users", uid, (u) => setPath(u, path, value));
+    },
+
+    watchGuests: (cb) => watch("guests", cb),
+    async createGuest(name, createdBy) {
+      const all = read<Collection>("guests", {});
+      all[newId()] = { name, createdBy, createdAt: now() };
+      write("guests", all);
+    },
+    async setGuestField(id, path, value) {
+      update("guests", id, (g) => setPath(g, path, value));
+    },
+    async deleteGuest(id) {
+      const all = read<Collection>("guests", {});
+      delete all[id];
+      write("guests", all);
     },
 
     watchEvents: (cb) => watch("events", cb),

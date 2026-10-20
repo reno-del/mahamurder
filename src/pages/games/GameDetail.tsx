@@ -4,12 +4,13 @@ import { requireLogin, useApp, useGameHelpers } from "../../state/AppContext";
 import { useModal } from "../../components/Modal";
 import { Cover } from "../../components/Cover";
 import { showError } from "../../lib/toast";
-import { displayName, playTime, players, stars, won } from "../../lib/format";
+import { displayName, playTime, players, prettyDate, stars, won } from "../../lib/format";
+import { RentalButton } from "../../components/RentalButton";
 import { GameForm } from "./GameForm";
 
 export function GameDetail({ gameId }: { gameId: string }) {
   const { user, me } = useApp();
-  const { gameById, friendRating, playedBy, togglePlayed, toggleLiked, setRating } = useGameHelpers();
+  const { gameById, friendRating, playedBy, togglePlayed, toggleLiked, setRating, copiesOf, toggleOwned } = useGameHelpers();
   const { openModal, closeModal } = useModal();
   const navigate = useNavigate();
 
@@ -19,6 +20,8 @@ export function GameDetail({ gameId }: { gameId: string }) {
   const liked = me?.liked?.[gameId];
   const fr = friendRating(gameId);
   const friends = playedBy(gameId);
+  const owned = me?.owned?.[gameId];
+  const copies = copiesOf(g);
 
   const remove = async () => {
     if (!requireLogin(user) || !confirm(`'${g.name}'을(를) 삭제할까요?`)) return;
@@ -64,6 +67,14 @@ export function GameDetail({ gameId }: { gameId: string }) {
               <dt>난이도</dt>
               <dd>{g.difficulty || "-"}</dd>
             </div>
+            <div>
+              <dt>정발</dt>
+              <dd>{g.localized === false ? "미정발" : "정발됨"}</dd>
+            </div>
+            <div>
+              <dt>구비</dt>
+              <dd>{copies.length ? `${copies.length}명 보유` : user ? "구비 안 됨" : "-"}</dd>
+            </div>
           </dl>
           <div className="tags">
             {(g.genres || []).map((t) => (
@@ -90,6 +101,9 @@ export function GameDetail({ gameId }: { gameId: string }) {
         <button className={`btn ${liked ? "btn-on" : ""}`} onClick={() => toggleLiked(gameId)}>
           {liked ? "♥ 선호" : "♡ 하고 싶어요"}
         </button>
+        <button className={`btn ${owned ? "btn-on" : ""}`} onClick={() => toggleOwned(g)}>
+          {owned ? "📦 내가 보유 중" : "📦 가지고 있어요"}
+        </button>
         <button
           className="btn btn-primary"
           onClick={() => {
@@ -100,6 +114,22 @@ export function GameDetail({ gameId }: { gameId: string }) {
           📅 이 게임으로 모집하기
         </button>
       </div>
+      {copies.map((c) => {
+        const ownerName = c.owner.id === user?.uid ? "내" : `${c.owner.name}님${c.owner.guest ? "(미등록)" : ""}`;
+        return (
+          <div key={c.owner.id} className={`rental-box ${c.rental ? "rented" : ""}`}>
+            {c.rental ? (
+              <span>
+                🔑 {ownerName} 게임 · <b>{c.rental.uid === user?.uid ? "내가" : `${c.rental.name}님이`}</b> 대여 중{" "}
+                <span className="muted small">({prettyDate(c.rental.date)}부터)</span>
+              </span>
+            ) : (
+              <span>📦 {ownerName} 게임 · 대여 가능</span>
+            )}
+            <RentalButton game={g} copy={c} />
+          </div>
+        );
+      })}
       {played && (
         <div className="my-rating">
           내 평점{" "}

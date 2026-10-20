@@ -15,8 +15,17 @@ export interface Game {
   imageUrl?: string;
   link?: string;
   description?: string;
+  localized?: boolean; // 정발 여부. 값이 없으면 정발된 게임으로 본다
+  // 보유자 uid -> 그 사람의 게임을 누가 빌려 갔는지. 보유 여부 자체는 users/{uid}.owned에 있다
+  rentals?: Record<string, Rental>;
 }
 export type GameInput = Omit<Game, "id"> & { id?: string };
+
+export interface Rental {
+  uid: string;
+  name: string;
+  date: string; // YYYY-MM-DD
+}
 
 export interface PlayRecord {
   rating: number;
@@ -32,8 +41,17 @@ export interface Profile {
   bio?: string;
   played?: Record<string, PlayRecord>;
   liked?: Record<string, true>;
+  owned?: Record<string, true>; // 내가 가지고 있는 게임
   prefGenres?: string[];
   prefLength?: string;
+}
+
+// guests/{id}: 사이트에 가입하지 않은 친구. 게임 보유자로만 쓰이고 로그인한 누구나 관리한다
+export interface Guest {
+  id: string;
+  name: string;
+  owned?: Record<string, true>;
+  createdBy?: string; // 만든 사람 uid
 }
 
 // events/{id}
@@ -73,10 +91,19 @@ export interface Store {
   saveGame(game: GameInput): Promise<void>;
   deleteGame(id: string): Promise<void>;
   seedGames(): Promise<void>;
+  // ownerUid의 게임을 빌리거나 반납한다
+  rentGame(id: string, ownerUid: string, rental: Rental): Promise<void>;
+  returnGame(id: string, ownerUid: string): Promise<void>;
 
   watchProfiles(cb: (profiles: Profile[]) => void): Unsubscribe;
   // path 예: "nickname", "played.<gameId>", "liked.<gameId>" / value가 null이면 필드 삭제
   setProfileField(uid: string, path: string, value: unknown): Promise<void>;
+
+  watchGuests(cb: (guests: Guest[]) => void): Unsubscribe;
+  createGuest(name: string, createdBy: string): Promise<void>;
+  // path 예: "name", "owned.<gameId>" / value가 null이면 필드 삭제
+  setGuestField(id: string, path: string, value: unknown): Promise<void>;
+  deleteGuest(id: string): Promise<void>;
 
   watchEvents(cb: (events: GameEvent[]) => void): Unsubscribe;
   createEvent(ev: NewEvent): Promise<void>;

@@ -43,7 +43,8 @@ firebase deploy --only firestore   # firestore.rules / firestore.indexes.json �
 **주의할 점**: `main.tsx`는 `StrictMode`로 렌더링하므로 개발 모드에서 effect가 두 번 실행됩니다. `useEffect` 콜백은 아무것도 반환하지 않거나 정리(cleanup) 함수만 반환해야 합니다. `useEffect(() => window.scrollTo(0, 0))`처럼 화살표 함수가 다른 값을 반환하면 화면 전체가 하얗게 됩니다. 구독 effect는 `store.watch*`가 돌려주는 해제 함수를 그대로 반환하면 됩니다.
 
 **Firestore 데이터 모델** (`src/types.ts`, 권한은 `firestore.rules`가 강제함):
-- `games/{id}`: 누구나 읽을 수 있고, 로그인한 사용자는 누구나 쓸 수 있습니다.
-- `users/{uid}`: `played.{gameId}: {rating, date}`, `liked.{gameId}: true`, `nickname`, `bio`, `prefGenres`, `prefLength`가 들어갑니다. 본인 문서만 쓸 수 있습니다. 중첩 필드는 `setProfileField(uid, "played.<id>", value)`처럼 점 경로로 갱신하며, `value === null`이면 필드를 삭제합니다.
+- `games/{id}`: 누구나 읽을 수 있고, 로그인한 사용자는 누구나 쓸 수 있습니다. `localized`(정발 여부, 값이 없으면 정발됨)와 `rentals.{ownerUid}: {uid, name, date}`(그 사람이 가진 게임을 누가 빌려 갔는지)가 들어갑니다. 보유 여부는 게임이 아니라 각자의 `users/{uid}.owned`에 있고, 같은 게임을 여러 명이 가지고 있으면 한 벌씩 따로 빌립니다(`useGameHelpers().copiesOf`). 대여·반납은 `store.rentGame`/`returnGame`으로 하고, 모아 보는 화면은 `#/library`(`pages/library/LibraryPage.tsx`)입니다.
+- `users/{uid}`: `played.{gameId}: {rating, date}`, `liked.{gameId}: true`, `owned.{gameId}: true`, `nickname`, `bio`, `prefGenres`, `prefLength`가 들어갑니다. 본인 문서만 쓸 수 있습니다. 중첩 필드는 `setProfileField(uid, "played.<id>", value)`처럼 점 경로로 갱신하며, `value === null`이면 필드를 삭제합니다.
+- `guests/{id}`: 가입하지 않은 친구입니다. `name`, `owned.{gameId}: true`, `createdBy`가 들어가고, 로그인한 사용자는 누구나 읽고 쓸 수 있습니다. 게임 보유자로만 쓰이며 `rentals`의 키로 guest id가 들어갑니다. 보유자는 프로필과 guest를 합친 `Owner` 형태로 다룹니다(`useGameHelpers().ownersOf`).
 - `events/{id}`: `hostUid`, `gameId`, `date`(`YYYY-MM-DD` 문자열), `participants.{uid}: name`이 들어갑니다. 주최자는 모든 필드를 수정할 수 있고, 다른 사람은 `participants`에서 자기 uid만 추가하거나 삭제할 수 있습니다. 클라이언트 쓰기 형태를 바꾸면 규칙도 함께 확인하세요.
 - 표시 이름 우선순위는 `nickname`, 그다음 `googleName`입니다(`lib/format.ts`의 `displayName`).

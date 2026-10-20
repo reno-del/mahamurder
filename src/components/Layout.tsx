@@ -37,6 +37,7 @@ export function Layout({ children }: { children: ReactNode }) {
         <nav className="nav">
           <NavLink to="/games">게임 소개</NavLink>
           <NavLink to="/schedule">일정 모집</NavLink>
+          <NavLink to="/library">보유 게임</NavLink>
           <NavLink to="/mypage">마이페이지</NavLink>
         </nav>
         <AuthBox />

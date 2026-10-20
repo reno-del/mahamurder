@@ -7,6 +7,7 @@ import { Layout } from "./components/Layout";
 import { GamesPage } from "./pages/games/GamesPage";
 import { SchedulePage } from "./pages/schedule/SchedulePage";
 import { MyPage } from "./pages/mypage/MyPage";
+import { LibraryPage } from "./pages/library/LibraryPage";
 import "./styles/style.css";
 
 function ScrollToTop() {
@@ -29,6 +30,7 @@ createRoot(document.getElementById("root")!).render(
               <Route path="/games" element={<GamesPage />} />
               <Route path="/schedule" element={<SchedulePage />} />
               <Route path="/schedule/new/:gameId" element={<SchedulePage />} />
+              <Route path="/library" element={<LibraryPage />} />
               <Route path="/mypage" element={<MyPage />} />
               <Route path="*" element={<Navigate to="/games" replace />} />
             </Routes>
