@@ -9,4 +9,7 @@ export const firebaseConfig = {
   appId: "1:1031246131247:web:99c32af6929932bb9016da",
 };
 
-export const isConfigured = !firebaseConfig.apiKey.startsWith("YOUR_");
+export type FirebaseConfig = typeof firebaseConfig;
+
+// `npm run dev:demo`(VITE_DEMO=1)로 실행하면 설정이 있어도 데모 모드로 동작해 실제 데이터를 건드리지 않는다
+export const isConfigured = !firebaseConfig.apiKey.startsWith("YOUR_") && import.meta.env.VITE_DEMO !== "1";

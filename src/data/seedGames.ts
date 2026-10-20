@@ -1,6 +1,8 @@
 // 처음 시작할 때 넣어 두는 예시 데이터입니다.
 // 실제 게임 정보(가격·출시일·평가)는 사이트의 "게임 추가/수정"에서 정확한 값으로 바꿔 주세요.
-export const SEED_GAMES = [
+import type { GameInput } from "../types";
+
+export const SEED_GAMES: GameInput[] = [
   {
     name: "예시) 저택의 마지막 만찬",
     publisher: "예시 출판사",
