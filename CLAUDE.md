@@ -9,7 +9,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Firebase 프로젝트 ID: `mahamuder` (`.firebaserc`), 배포 URL: https://mahamuder.web.app
 - GitHub: https://github.com/reno-del/mahamurder (저장소 이름 철자가 프로젝트 ID와 다름)
 - 테스트와 린트 설정은 없습니다. 검증은 `npm run typecheck`와 브라우저 확인(로그인·쓰기 기능은 `npm run dev:demo`)으로 합니다.
-- 브랜치: React 버전은 `react-ts`에 있습니다. `main`과 현재 배포된 사이트는 아직 이전 버전(빌드 없는 순수 HTML/JS)입니다. `react-ts`에서 `firebase deploy`를 하면 실제 사이트가 React 버전으로 바뀝니다.
+- 브랜치: React 버전은 `react-ts`에 있고, 배포된 사이트도 React 버전입니다(2026-10-20 `react-ts`에서 배포). `main`은 아직 이전 버전(빌드 없는 순수 HTML/JS)이므로, `main`에서 `firebase deploy`를 하면 사이트가 이전 버전으로 되돌아갑니다.
 
 ## 명령어
 
