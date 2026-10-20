@@ -7,6 +7,7 @@ import { RentalButton } from "../../components/RentalButton";
 import { showError, toast } from "../../lib/toast";
 import { cleanName, displayName, players, playTime, prettyDate, ymd } from "../../lib/format";
 import { GameDetail } from "../games/GameDetail";
+import { OwnedGamePicker } from "./OwnedGamePicker";
 import type { Game, Guest } from "../../types";
 
 const byName = (a: Game, b: Game) => cleanName(a.name).localeCompare(cleanName(b.name), "ko");
@@ -48,36 +49,6 @@ function AddGuestForm() {
   );
 }
 
-// 미등록 친구가 가진 게임을 목록에 추가
-function AddGuestGame({ guest }: { guest: Guest }) {
-  const { games } = useApp();
-  const { setGuestOwned } = useGameHelpers();
-  const [gameId, setGameId] = useState("");
-  const options = games.filter((g) => !guest.owned?.[g.id]).sort(byName);
-  if (!options.length) return null;
-  const add = async () => {
-    const g = games.find((x) => x.id === gameId);
-    if (!g) return;
-    await setGuestOwned(guest, g, true);
-    setGameId("");
-  };
-  return (
-    <div className="inline-form">
-      <select className="input" value={gameId} onChange={(e) => setGameId(e.target.value)}>
-        <option value="">보유 게임 추가…</option>
-        {options.map((g) => (
-          <option key={g.id} value={g.id}>
-            {g.name}
-          </option>
-        ))}
-      </select>
-      <button className="btn btn-sm" disabled={!gameId} onClick={add}>
-        추가
-      </button>
-    </div>
-  );
-}
-
 export function LibraryPage() {
   const { user, games, profiles, guests } = useApp();
   const { copiesOf, setGuestOwned, deleteGuest } = useGameHelpers();
@@ -88,6 +59,7 @@ export function LibraryPage() {
   if (!user) return <LoginRequired title="📦 보유 게임" message="로그인하면 친구들이 가진 게임과 대여 현황을 볼 수 있어요." />;
 
   const openDetail = (id: string) => openModal(<GameDetail gameId={id} />);
+  const openPicker = (ownerId: string) => openModal(<OwnedGamePicker ownerId={ownerId} />);
   const nameOf = (o: Owner) => (o.id === user.uid ? "나" : o.name);
 
   const rows: Row[] = [...games].sort(byName).flatMap((game) => copiesOf(game).map((c) => ({ game, ...c })));
@@ -194,7 +166,12 @@ export function LibraryPage() {
       <section className="card">
         <div className="section-head">
           <h2 className="section-title">👥 친구별 보유 목록</h2>
-          <AddGuestForm />
+          <div className="inline-form">
+            <button className="btn btn-primary btn-sm" onClick={() => openPicker(user.uid)}>
+              📦 내 보유 게임 추가
+            </button>
+            <AddGuestForm />
+          </div>
         </div>
         {owners.length > 0 && (
           <div className="chips">
@@ -219,12 +196,16 @@ export function LibraryPage() {
                   {ownerRows.length}개 · 대여 중 {ownerRows.filter((r) => r.rental).length}
                 </span>
               </h3>
-              {guest && (
+              {(guest || owner.id === user.uid) && (
                 <div className="inline-form">
-                  <AddGuestGame guest={guest} />
-                  <button className="btn btn-ghost btn-sm danger" onClick={() => deleteGuest(guest)}>
-                    친구 삭제
+                  <button className="btn btn-sm" onClick={() => openPicker(owner.id)}>
+                    + 게임 추가
                   </button>
+                  {guest && (
+                    <button className="btn btn-ghost btn-sm danger" onClick={() => deleteGuest(guest)}>
+                      친구 삭제
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -274,7 +255,7 @@ export function LibraryPage() {
                 </table>
               </div>
             ) : (
-              <p className="muted small">아직 등록한 게임이 없어요. 오른쪽에서 이 친구가 가진 게임을 추가하세요.</p>
+              <p className="muted small">아직 등록한 게임이 없어요. '+ 게임 추가'를 눌러 이 친구가 가진 게임을 골라 주세요.</p>
             )}
           </div>
         ))}
