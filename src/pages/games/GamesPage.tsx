@@ -8,6 +8,8 @@ import { showError } from "../../lib/toast";
 import { cleanName, playTime, players, prettyDate, stars, won, ymd } from "../../lib/format";
 import { GameDetail } from "./GameDetail";
 import { GameForm } from "./GameForm";
+import { usePageMeta } from "../../lib/usePageMeta";
+import { FAQ } from "../../data/site";
 import type { Game } from "../../types";
 
 type SortKey = "rating" | "release" | "priceAsc" | "popular" | "name";
@@ -120,6 +122,7 @@ export function GamesPage() {
     savedFilter = filter;
   }, [filter]);
   const set = <K extends keyof Filter>(key: K, value: Filter[K]) => setFilter((f) => ({ ...f, [key]: value }));
+  usePageMeta();
 
   const q = filter.q.trim().toLowerCase();
   const size = Number(filter.size);
@@ -211,6 +214,18 @@ export function GamesPage() {
           list.map((g) => <GameCard key={g.id} game={g} onOpen={() => openDetail(g.id)} />)
         )}
       </div>
+      {/* 구조화 데이터(FAQPage)와 같은 내용을 화면에도 보여 준다 */}
+      <section className="card faq" aria-labelledby="faq-title">
+        <h2 id="faq-title" className="section-title">
+          자주 묻는 질문
+        </h2>
+        {FAQ.map((f) => (
+          <details key={f.q}>
+            <summary>{f.q}</summary>
+            <p>{f.a}</p>
+          </details>
+        ))}
+      </section>
     </>
   );
 }

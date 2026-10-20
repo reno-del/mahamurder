@@ -224,6 +224,18 @@ textarea.input { resize: vertical; }
 }
 .picker-empty { margin: 24px 0; text-align: center; }
 
+/* 자주 묻는 질문 */
+.faq { margin-top: 28px; }
+.faq details { border-top: 1px solid var(--line); padding: 12px 2px; }
+.faq details:first-of-type { border-top: 0; }
+.faq summary { cursor: pointer; font-weight: 500; }
+.faq details p { margin: 8px 0 0; color: var(--muted); font-size: 14px; line-height: 1.6; }
+
+/* 빌드 때 넣는 정적 내용 (JS가 실행되면 React 화면으로 바뀐다) */
+.seo-static ul { padding-left: 20px; line-height: 1.7; }
+.seo-static h3 { font-size: 15px; margin: 16px 0 4px; }
+.seo-static .card + .card { margin-top: 16px; }
+
 .rating { display: flex; align-items: center; gap: 6px; }
 .stars { color: var(--gold); letter-spacing: 1px; }
 .facts { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; margin: 4px 0; font-size: 13px; }

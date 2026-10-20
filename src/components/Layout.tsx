@@ -3,6 +3,7 @@ import { Link, NavLink } from "react-router-dom";
 import { store } from "../store";
 import { useApp, useMyName } from "../state/AppContext";
 import { showError } from "../lib/toast";
+import { useLiveStructuredData } from "../lib/usePageMeta";
 
 function AuthBox() {
   const { user, authReady } = useApp();
@@ -28,6 +29,7 @@ function AuthBox() {
 }
 
 export function Layout({ children }: { children: ReactNode }) {
+  useLiveStructuredData();
   return (
     <>
       <header className="topbar">

@@ -8,6 +8,7 @@ import { Cover } from "../../components/Cover";
 import { showError, toast } from "../../lib/toast";
 import { cleanName, displayName, players, prettyDate, ymd } from "../../lib/format";
 import { GameDetail } from "../games/GameDetail";
+import { usePageMeta } from "../../lib/usePageMeta";
 import type { Game, Profile } from "../../types";
 
 const LENGTHS = ["~2시간", "2~4시간", "4시간 이상", "상관없음"];
@@ -200,6 +201,7 @@ export function MyPage() {
   const [tab, setTabState] = useState<Tab>(savedTab);
   const setTab = (t: Tab) => setTabState((savedTab = t));
   const [collapsed, setCollapsedState] = useState(loadCollapsed);
+  usePageMeta("마이페이지", "내가 플레이한 머더미스터리 게임과 평점, 선호 장르, 추천 게임을 기록합니다.");
   const toggleCollapsed = () => {
     saveCollapsed(!collapsed);
     setCollapsedState(!collapsed);

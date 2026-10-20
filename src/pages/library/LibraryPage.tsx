@@ -8,6 +8,7 @@ import { showError, toast } from "../../lib/toast";
 import { cleanName, displayName, players, playTime, prettyDate, ymd } from "../../lib/format";
 import { GameDetail } from "../games/GameDetail";
 import { OwnedGamePicker } from "./OwnedGamePicker";
+import { usePageMeta } from "../../lib/usePageMeta";
 import type { Game, Guest } from "../../types";
 
 const byName = (a: Game, b: Game) => cleanName(a.name).localeCompare(cleanName(b.name), "ko");
@@ -55,6 +56,7 @@ export function LibraryPage() {
   const { openModal } = useModal();
   const [ownerFilter, setOwnerState] = useState(savedOwner);
   const setOwner = (id: string) => setOwnerState((savedOwner = id));
+  usePageMeta("보유 게임", "친구들이 가진 머더미스터리 게임과 대여 현황을 한눈에 봅니다.");
 
   if (!user) return <LoginRequired title="📦 보유 게임" message="로그인하면 친구들이 가진 게임과 대여 현황을 볼 수 있어요." />;
 
