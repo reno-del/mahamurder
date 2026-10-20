@@ -1,0 +1,30 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+
+    // 게임 소개: 누구나 볼 수 있고, 로그인한 친구는 추가/수정/삭제 가능
+    match /games/{gameId} {
+      allow read: if true;
+      allow write: if signedIn();
+    }
+
+    // 프로필: 로그인한 친구끼리 서로 볼 수 있고, 본인 문서만 수정 가능
+    match /users/{uid} {
+      allow read: if signedIn();
+      allow write: if signedIn() && request.auth.uid == uid;
+    }
+
+    // 일정 모집 공지
+    match /events/{eventId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.hostUid == request.auth.uid;
+      // 주최자는 수정/삭제 가능
+      allow update, delete: if signedIn() && resource.data.hostUid == request.auth.uid;
+      // 다른 사람은 참가자 목록에서 '자기 자신'만 추가/삭제 가능
+      allow update: if signedIn()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['participants'])
+        && request.resource.data.participants.diff(resource.data.participants).affectedKeys().hasOnly([request.auth.uid]);
+    }
+  }
+}
