@@ -8,7 +8,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - Firebase 프로젝트 ID: `mahamuder` (`.firebaserc`), 배포 URL: https://mahamuder.web.app
 - GitHub: https://github.com/reno-del/mahamurder (저장소 이름 철자가 프로젝트 ID와 다름)
-- 테스트와 린트 설정은 없습니다. 검증은 `npm run typecheck`와 브라우저 확인으로 합니다.
+- 테스트와 린트 설정은 없습니다. 검증은 `npm run typecheck`와 브라우저 확인(로그인·쓰기 기능은 `npm run dev:demo`)으로 합니다.
+- 브랜치: React 버전은 `react-ts`에 있습니다. `main`과 현재 배포된 사이트는 아직 이전 버전(빌드 없는 순수 HTML/JS)입니다. `react-ts`에서 `firebase deploy`를 하면 실제 사이트가 React 버전으로 바뀝니다.
 
 ## 명령어
 
@@ -36,6 +37,10 @@ firebase deploy --only firestore   # firestore.rules / firestore.indexes.json �
 - `useGameHelpers()`는 플레이, 선호, 평점 토글처럼 여러 페이지가 공유하는 동작을 모아 둔 훅입니다. 로그인이 필요한 동작은 `requireLogin(user)`로 막습니다.
 
 **모달** (`src/components/Modal.tsx`): `useModal().openModal(<Component ... />)`로 하나뿐인 `<dialog>`에 내용을 띄웁니다. 내용으로는 스냅샷이 아니라 **id를 받아 `useApp()`에서 직접 찾는 컴포넌트**(`GameDetail`, `EventModal`)를 넘깁니다. 그래야 데이터가 바뀌면 모달도 자동으로 최신 상태가 됩니다. `data-close` 속성이 있는 버튼과 backdrop 클릭으로 닫힙니다. 모달은 라우트 트리 밖에 렌더링되므로, 페이지와 상태를 공유해야 하면 모듈 수준 상태를 씁니다(예: 달력 월 `lib/calendarView.ts`, 검색 필터와 마이페이지 탭은 각 파일의 모듈 변수).
+
+**스타일**: 전역 CSS 파일 `src/styles/style.css` 하나만 사용합니다(CSS 모듈이나 CSS-in-JS는 쓰지 않음). 이전 버전의 클래스 이름(`card`, `btn btn-primary`, `modal`, `cal-day` 등)을 그대로 이어받았으므로, 새 컴포넌트도 기존 클래스를 재사용하세요.
+
+**주의할 점**: `main.tsx`는 `StrictMode`로 렌더링하므로 개발 모드에서 effect가 두 번 실행됩니다. `useEffect` 콜백은 아무것도 반환하지 않거나 정리(cleanup) 함수만 반환해야 합니다. `useEffect(() => window.scrollTo(0, 0))`처럼 화살표 함수가 다른 값을 반환하면 화면 전체가 하얗게 됩니다. 구독 effect는 `store.watch*`가 돌려주는 해제 함수를 그대로 반환하면 됩니다.
 
 **Firestore 데이터 모델** (`src/types.ts`, 권한은 `firestore.rules`가 강제함):
 - `games/{id}`: 누구나 읽을 수 있고, 로그인한 사용자는 누구나 쓸 수 있습니다.
