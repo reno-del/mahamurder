@@ -1,14 +1,34 @@
 // 검색엔진(SEO)·AI 답변 엔진(AEO)·생성형 검색(GEO)을 위한 빌드 플러그인.
 // 이 사이트는 클라이언트에서 그리는 SPA라 JS를 실행하지 않는 크롤러(대부분의 AI 크롤러)에는 빈 화면만 보인다.
-// 그래서 빌드할 때 Firestore 공개 REST API로 게임 목록을 읽어 index.html 안에 정적 HTML과 구조화 데이터로 넣고,
-// sitemap.xml·robots.txt·llms.txt도 함께 만든다. 게임은 빌드(=배포) 시점 기준이므로 게임이 바뀌면 다시 배포해야 반영된다.
+// 그래서 빌드할 때 Firestore 공개 REST API로 게임 목록을 읽어
+// - index.html 안에 정적 HTML(게임 목록·FAQ)과 구조화 데이터를 넣고
+// - 게임마다 games/<id>.html을 따로 만들어(주소는 /games/<id>, firebase.json의 cleanUrls) 각자 제목·설명·구조화 데이터를 갖게 하고
+// - sitemap.xml·robots.txt·llms.txt를 만든다.
+// 게임은 빌드(=배포) 시점 기준이므로 게임이 바뀌면 다시 배포해야 반영된다.
 import type { HtmlTagDescriptor, Plugin } from "vite";
 import { FAQ, SITE } from "../src/data/site";
-import { gameSummary, jsonLd, LD_SCRIPT_ID, publicGames, structuredData, type SeoGame } from "../src/lib/seo";
+import {
+  gameDescription,
+  gameStructuredData,
+  gameSummary,
+  gameUrl,
+  jsonLd,
+  LD_SCRIPT_ID,
+  playersText,
+  publicGames,
+  structuredData,
+  timeText,
+  type SeoGame,
+} from "../src/lib/seo";
 
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
 const PROJECT_ID = "mahamuder";
+
+interface BuiltGame extends SeoGame {
+  id: string;
+  updated?: string; // YYYY-MM-DD, sitemap의 lastmod
+}
 
 // ---------- Firestore REST 응답 해석 ----------
 
@@ -19,7 +39,7 @@ type FsValue = {
   booleanValue?: boolean;
   arrayValue?: { values?: FsValue[] };
 };
-type FsDoc = { fields?: Record<string, FsValue> };
+type FsDoc = { name: string; updateTime?: string; fields?: Record<string, FsValue> };
 
 const str = (v?: FsValue) => (v?.stringValue || "").trim() || undefined;
 const num = (v?: FsValue) => {
@@ -27,7 +47,7 @@ const num = (v?: FsValue) => {
   return typeof n === "number" && Number.isFinite(n) && n > 0 ? n : undefined;
 };
 
-async function fetchGames(): Promise<SeoGame[]> {
+async function fetchGames(): Promise<BuiltGame[]> {
   const docs: FsDoc[] = [];
   let pageToken = "";
   do {
@@ -41,49 +61,120 @@ async function fetchGames(): Promise<SeoGame[]> {
     pageToken = body.nextPageToken || "";
   } while (pageToken);
 
+  // 예시 데이터는 publicGames가 뺀다. 대여 기록 같은 개인 정보는 처음부터 읽지 않는다
   return publicGames(
-    // 예시 데이터는 publicGames가 뺀다. 대여 기록 같은 개인 정보는 처음부터 읽지 않는다
-    docs.map(({ fields: f = {} }) => ({
-      name: str(f.name) || "",
-      publisher: str(f.publisher),
-      minPlayers: num(f.minPlayers),
-      maxPlayers: num(f.maxPlayers),
-      playTime: num(f.playTime),
-      genres: (f.genres?.arrayValue?.values || []).map((v) => str(v)).filter((s): s is string => !!s),
-      imageUrl: str(f.imageUrl),
-      description: str(f.description),
-      localized: f.localized?.booleanValue !== false,
-    }))
-  );
+    docs.map(
+      ({ name, updateTime, fields: f = {} }): BuiltGame => ({
+        id: name.split("/").pop()!,
+        updated: updateTime?.slice(0, 10),
+        name: str(f.name) || "",
+        publisher: str(f.publisher),
+        minPlayers: num(f.minPlayers),
+        maxPlayers: num(f.maxPlayers),
+        playTime: num(f.playTime),
+        genres: (f.genres?.arrayValue?.values || []).map((v) => str(v)).filter((s): s is string => !!s),
+        imageUrl: str(f.imageUrl),
+        description: str(f.description),
+        localized: f.localized?.booleanValue !== false,
+      })
+    )
+  ) as BuiltGame[];
 }
 
 // ---------- 정적 HTML (JS 실행 전·JS를 안 쓰는 크롤러용, React가 그리면 사라진다) ----------
 
-function staticBody(games: SeoGame[]) {
+// 게임 페이지를 만들 때 바꿔 끼울 수 있도록 정적 본문을 주석으로 감싼다
+const STATIC_START = "<!--seo-static-->";
+const STATIC_END = "<!--/seo-static-->";
+const wrapStatic = (inner: string) => `<div id="root">${STATIC_START}<main class="view seo-static">${inner}</main>${STATIC_END}</div>`;
+
+const faqHtml = () => `<section class="card">
+        <h2 class="section-title">자주 묻는 질문</h2>
+        ${FAQ.map((f) => `<h3>${esc(f.q)}</h3><p>${esc(f.a)}</p>`).join("")}
+      </section>`;
+
+function homeBody(games: BuiltGame[]) {
   const gameList = games.length
     ? `<section class="card">
         <h2 class="section-title">머더미스터리 게임 목록 (${games.length})</h2>
         <ul>${games
-          .map((g) => `<li><b>${esc(g.name)}</b>${gameSummary(g) ? ` — ${esc(gameSummary(g))}` : ""}</li>`)
+          .map((g) => `<li><a href="/games/${g.id}"><b>${esc(g.name)}</b></a>${gameSummary(g) ? ` — ${esc(gameSummary(g))}` : ""}</li>`)
           .join("")}</ul>
       </section>`
     : "";
-  return `<div id="root"><main class="view seo-static">
+  return wrapStatic(`
       <section class="hero">
         <h1>${esc(SITE.name)}</h1>
         <p class="muted">${esc(SITE.description)}</p>
       </section>
       ${gameList}
-      <section class="card">
-        <h2 class="section-title">자주 묻는 질문</h2>
-        ${FAQ.map((f) => `<h3>${esc(f.q)}</h3><p>${esc(f.a)}</p>`).join("")}
-      </section>
-    </main></div>`;
+      ${faqHtml()}`);
+}
+
+function gameBody(g: BuiltGame) {
+  const facts = [
+    ["인원", playersText(g)],
+    ["플레이 시간", timeText(g.playTime)],
+    ["장르", g.genres.join(", ")],
+    ["제작사", g.publisher || ""],
+    ["정발 여부", g.localized ? "정발됨" : "미정발"],
+  ].filter(([, v]) => v);
+  return wrapStatic(`
+      <p><a href="/">← ${esc(SITE.name)} 게임 목록</a></p>
+      <article class="card">
+        ${g.imageUrl ? `<img src="${esc(g.imageUrl)}" alt="${esc(g.name)} 표지" width="320" loading="lazy" />` : ""}
+        <h1>${esc(g.name)}</h1>
+        <dl class="facts facts-wide">${facts.map(([k, v]) => `<div><dt>${k}</dt><dd>${esc(v)}</dd></div>`).join("")}</dl>
+        ${g.description ? `<p class="desc">${esc(g.description)}</p>` : ""}
+      </article>`);
+}
+
+// ---------- 게임 페이지 HTML: index.html을 바탕으로 머리말·본문만 바꾼다 ----------
+
+function replaceMeta(html: string, key: string, value: string) {
+  const re = new RegExp(`(<meta (?:name|property)="${key.replace(/[.:]/g, "\\$&")}" content=")[^"]*(")`);
+  return html.replace(re, `$1${esc(value)}$2`);
+}
+
+function gameHtml(base: string, g: BuiltGame) {
+  const title = `${g.name} | ${SITE.name}`;
+  const desc = gameDescription(g);
+  const url = gameUrl(g.id);
+  let html = base
+    .replace(/<title>[^<]*<\/title>/, `<title>${esc(title)}</title>`)
+    .replace(/(<link rel="canonical" href=")[^"]*(")/, `$1${url}$2`)
+    .replace(
+      new RegExp(`(<script type="application/ld\\+json" id="${LD_SCRIPT_ID}">)[\\s\\S]*?(</script>)`),
+      (_, open, close) => open + jsonLd(gameStructuredData(g.id, g)) + close
+    );
+  const start = html.indexOf(STATIC_START);
+  const end = html.indexOf(STATIC_END);
+  html = html.slice(0, html.lastIndexOf("<div id=\"root\">", start)) + gameBody(g) + html.slice(end + STATIC_END.length + "</div>".length);
+  for (const [k, v] of [
+    ["description", desc],
+    ["og:type", "article"],
+    ["og:url", url],
+    ["og:title", title],
+    ["og:description", desc],
+    ["twitter:title", title],
+    ["twitter:description", desc],
+    ...(g.imageUrl
+      ? [
+          ["og:image", g.imageUrl],
+          ["twitter:image", g.imageUrl],
+          ["og:image:alt", `${g.name} 표지`],
+        ]
+      : []),
+  ])
+    html = replaceMeta(html, k, v);
+  // 게임 표지는 크기를 모르므로 기본 공유 이미지 크기 정보를 뺀다
+  if (g.imageUrl) html = html.replace(/<meta property="og:image:(?:width|height)" content="[^"]*">\s*/g, "");
+  return html;
 }
 
 // ---------- 빌드 산출물 ----------
 
-function llmsTxt(games: SeoGame[]) {
+function llmsTxt(games: BuiltGame[]) {
   return [
     `# ${SITE.name}`,
     "",
@@ -96,16 +187,21 @@ function llmsTxt(games: SeoGame[]) {
     "",
     "## 주요 화면",
     "",
-    `- [게임 소개](${SITE.url}#/games): 인원·장르·정발 여부·보유 여부로 게임 검색, 친구 평점`,
-    `- [일정 모집](${SITE.url}#/schedule): 달력으로 모임 일정을 만들고 참가`,
-    `- [보유 게임](${SITE.url}#/library): 친구별 보유 게임과 대여 현황`,
-    `- [마이페이지](${SITE.url}#/mypage): 플레이 기록, 선호 장르, 추천 게임`,
+    `- [게임 소개](${SITE.url}games): 인원·장르·정발 여부·보유 여부로 게임 검색, 친구 평점`,
+    `- [일정 모집](${SITE.url}schedule): 달력으로 모임 일정을 만들고 참가`,
+    `- [보유 게임](${SITE.url}library): 친구별 보유 게임과 대여 현황`,
+    `- [마이페이지](${SITE.url}mypage): 플레이 기록, 선호 장르, 추천 게임`,
     "",
     "## 자주 묻는 질문",
     "",
     ...FAQ.flatMap((f) => [`### ${f.q}`, "", f.a, ""]),
     ...(games.length
-      ? [`## 머더미스터리 게임 목록 (${games.length})`, "", ...games.map((g) => `- ${g.name}${gameSummary(g) ? `: ${gameSummary(g)}` : ""}`), ""]
+      ? [
+          `## 머더미스터리 게임 목록 (${games.length})`,
+          "",
+          ...games.map((g) => `- [${g.name}](${gameUrl(g.id)})${gameSummary(g) ? `: ${gameSummary(g)}` : ""}`),
+          "",
+        ]
       : []),
   ].join("\n");
 }
@@ -117,15 +213,14 @@ const today = () => {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 };
 
-const sitemapXml = () => `<?xml version="1.0" encoding="UTF-8"?>
+const sitemapXml = (games: BuiltGame[]) => {
+  const url = (loc: string, lastmod: string) => `  <url>\n    <loc>${esc(loc)}</loc>\n    <lastmod>${lastmod}</lastmod>\n  </url>`;
+  return `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>${SITE.url}</loc>
-    <lastmod>${today()}</lastmod>
-    <changefreq>weekly</changefreq>
-  </url>
+${[url(SITE.url, today()), ...games.map((g) => url(gameUrl(g.id), g.updated || today()))].join("\n")}
 </urlset>
 `;
+};
 
 const robotsTxt = () => `# 모든 검색엔진과 AI 크롤러의 수집을 허용합니다
 User-agent: *
@@ -138,10 +233,12 @@ Sitemap: ${SITE.url}sitemap.xml
 
 export function seoPlugin(): Plugin {
   let isBuild = false;
-  let games: SeoGame[] = [];
+  let games: BuiltGame[] = [];
 
   return {
     name: "mahamuder-seo",
+    // index.html이 완성된 뒤(generateBundle)에 그걸 바탕으로 게임 페이지를 만들어야 하므로 마지막에 돈다
+    enforce: "post",
     configResolved(config) {
       isBuild = config.command === "build";
     },
@@ -149,7 +246,7 @@ export function seoPlugin(): Plugin {
       if (!isBuild) return;
       try {
         games = await fetchGames();
-        this.info(`게임 ${games.length}개를 정적 HTML·구조화 데이터에 넣었어요`);
+        this.info(`게임 ${games.length}개를 정적 HTML·구조화 데이터·게임 페이지로 만들어요`);
       } catch (err) {
         // 네트워크가 없어도 빌드는 되도록, 게임 목록만 빼고 진행한다
         this.warn(`게임 목록을 읽지 못해 정적 게임 목록 없이 빌드합니다: ${String(err)}`);
@@ -184,14 +281,20 @@ export function seoPlugin(): Plugin {
         html: html
           .replace(/<title>[^<]*<\/title>/, `<title>${esc(SITE.title)}</title>`)
           .replace(/<meta name="description"[^>]*>/, `<meta name="description" content="${esc(SITE.description)}" />`)
-          .replace('<div id="root"></div>', staticBody(games)),
+          .replace('<div id="root"></div>', homeBody(games)),
         tags,
       };
     },
-    generateBundle() {
+    generateBundle(_, bundle) {
       this.emitFile({ type: "asset", fileName: "llms.txt", source: llmsTxt(games) });
-      this.emitFile({ type: "asset", fileName: "sitemap.xml", source: sitemapXml() });
+      this.emitFile({ type: "asset", fileName: "sitemap.xml", source: sitemapXml(games) });
       this.emitFile({ type: "asset", fileName: "robots.txt", source: robotsTxt() });
+
+      const index = bundle["index.html"];
+      if (!games.length) return;
+      if (index?.type !== "asset") return this.warn("index.html을 찾지 못해 게임 페이지를 만들지 않았어요");
+      const base = String(index.source);
+      for (const g of games) this.emitFile({ type: "asset", fileName: `games/${g.id}.html`, source: gameHtml(base, g) });
     },
   };
 }

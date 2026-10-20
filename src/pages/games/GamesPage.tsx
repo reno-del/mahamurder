@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { store } from "../../store";
 import { requireLogin, useApp, useGameHelpers } from "../../state/AppContext";
 import { useModal } from "../../components/Modal";
@@ -9,6 +9,7 @@ import { cleanName, playTime, players, prettyDate, stars, won, ymd } from "../..
 import { GameDetail } from "./GameDetail";
 import { GameForm } from "./GameForm";
 import { usePageMeta } from "../../lib/usePageMeta";
+import { gameDescription, toSeoGame } from "../../lib/seo";
 import { FAQ } from "../../data/site";
 import type { Game } from "../../types";
 
@@ -76,7 +77,12 @@ function GameCard({ game: g, onOpen }: { game: Game; onOpen: () => void }) {
           {me?.played?.[g.id] && <span className="badge badge-done">플레이함</span>}
           {me?.liked?.[g.id] && <span className="badge badge-like">♥ 선호</span>}
         </div>
-        <h3 className="game-title">{g.name}</h3>
+        <h3 className="game-title">
+          {/* 크롤러가 게임 페이지를 따라갈 수 있도록 실제 링크로 둔다. 카드 클릭과 겹치지 않게 전파를 막는다 */}
+          <Link to={`/games/${g.id}`} onClick={(e) => e.stopPropagation()}>
+            {g.name}
+          </Link>
+        </h3>
         <p className="muted small">{g.publisher || ""}</p>
         <div className="rating">
           <span className="stars">{stars(g.rating)}</span> <b>{g.rating ? Number(g.rating).toFixed(1) : "-"}</b>{" "}
@@ -116,13 +122,45 @@ function GameCard({ game: g, onOpen }: { game: Game; onOpen: () => void }) {
 export function GamesPage() {
   const { user, games } = useApp();
   const { allGenres, playedBy, ownersOf } = useGameHelpers();
-  const { openModal } = useModal();
+  const { openModal, closeModal } = useModal();
   const [filter, setFilter] = useState<Filter>(savedFilter);
   useEffect(() => {
     savedFilter = filter;
   }, [filter]);
   const set = <K extends keyof Filter>(key: K, value: Filter[K]) => setFilter((f) => ({ ...f, [key]: value }));
-  usePageMeta();
+
+  // /games/<id> 주소면 목록 위에 그 게임의 상세 모달을 띄운다. 모달을 닫으면 /games로 돌아간다
+  const { gameId } = useParams();
+  const navigate = useNavigate();
+  const current = gameId ? games.find((g) => g.id === gameId) : undefined;
+  const seoGame = current && toSeoGame(current);
+  usePageMeta(seoGame ? cleanName(seoGame.name) : undefined, seoGame ? gameDescription(seoGame) : undefined, current ? `games/${current.id}` : "");
+
+  const openedByRoute = useRef(false);
+  const hasCurrent = !!current;
+  const loaded = games.length > 0;
+  useEffect(() => {
+    if (!gameId) {
+      // 뒤로 가기 등으로 주소에서 게임이 빠지면 띄워 둔 모달도 닫는다
+      if (openedByRoute.current) closeModal();
+      openedByRoute.current = false;
+      return;
+    }
+    if (!hasCurrent) {
+      // 목록을 받았는데도 없으면 지워진 게임이므로 목록으로 보낸다 (아직 받기 전이면 기다린다)
+      if (loaded) navigate("/games", { replace: true });
+      return;
+    }
+    openedByRoute.current = true;
+    openModal(<GameDetail gameId={gameId} />, {
+      onClose: () => {
+        openedByRoute.current = false;
+        // 모달 안에서 다른 페이지로 이동하며 닫힌 경우(모집하기 등)는 그대로 둔다
+        if (window.location.pathname === `/games/${gameId}`) navigate("/games");
+      },
+    });
+    // games 자체는 의존성에서 뺀다 (게임 정보가 바뀔 때마다 모달을 다시 열지 않도록). 받았는지·찾았는지만 본다
+  }, [gameId, hasCurrent, loaded]);
 
   const q = filter.q.trim().toLowerCase();
   const size = Number(filter.size);
@@ -144,7 +182,7 @@ export function GamesPage() {
     )
     .sort(sorters[filter.sort]);
 
-  const openDetail = (id: string) => openModal(<GameDetail gameId={id} />);
+  const openDetail = (id: string) => navigate(`/games/${id}`);
 
   return (
     <>

@@ -394,3 +394,5 @@ textarea.input { resize: vertical; }
   .cal-ev { font-size: 10px; padding: 1px 3px; }
   .cal-ev b { display: none; }
 }
+.game-title a { color: inherit; text-decoration: none; }
+.game-title a:hover { text-decoration: underline; }

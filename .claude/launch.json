@@ -12,6 +12,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "preview", "--", "--port", "4173", "--strictPort"],
       "port": 4173
+    },
+    {
+      "name": "hosting-local",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": ["/c", "%APPDATA%\\npm\\firebase.cmd", "serve", "--only", "hosting", "--port", "5000"],
+      "port": 5000
     }
   ]
 }

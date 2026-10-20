@@ -15,7 +15,7 @@ export function SchedulePage() {
   const { user, games, events } = useApp();
   const { openModal } = useModal();
   const navigate = useNavigate();
-  usePageMeta("일정 모집", "머더미스터리 게임 모임 일정을 달력으로 보고, 원하는 일정에 참가 신청합니다.");
+  usePageMeta("일정 모집", "머더미스터리 게임 모임 일정을 달력으로 보고, 원하는 일정에 참가 신청합니다.", "schedule");
   // 게임 상세에서 "이 게임으로 모집하기"를 누르면 /schedule/new/<gameId> 로 들어온다.
   const { gameId } = useParams();
 

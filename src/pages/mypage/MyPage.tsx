@@ -201,7 +201,7 @@ export function MyPage() {
   const [tab, setTabState] = useState<Tab>(savedTab);
   const setTab = (t: Tab) => setTabState((savedTab = t));
   const [collapsed, setCollapsedState] = useState(loadCollapsed);
-  usePageMeta("마이페이지", "내가 플레이한 머더미스터리 게임과 평점, 선호 장르, 추천 게임을 기록합니다.");
+  usePageMeta("마이페이지", "내가 플레이한 머더미스터리 게임과 평점, 선호 장르, 추천 게임을 기록합니다.", "mypage");
   const toggleCollapsed = () => {
     saveCollapsed(!collapsed);
     setCollapsedState(!collapsed);

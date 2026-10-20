@@ -56,7 +56,7 @@ export function LibraryPage() {
   const { openModal } = useModal();
   const [ownerFilter, setOwnerState] = useState(savedOwner);
   const setOwner = (id: string) => setOwnerState((savedOwner = id));
-  usePageMeta("보유 게임", "친구들이 가진 머더미스터리 게임과 대여 현황을 한눈에 봅니다.");
+  usePageMeta("보유 게임", "친구들이 가진 머더미스터리 게임과 대여 현황을 한눈에 봅니다.", "library");
 
   if (!user) return <LoginRequired title="📦 보유 게임" message="로그인하면 친구들이 가진 게임과 대여 현황을 볼 수 있어요." />;
 
