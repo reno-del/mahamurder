@@ -20,6 +20,23 @@ const TABS: [Tab, string][] = [
 ];
 let savedTab: Tab = "all";
 
+// 게임 기록 목록 접힘 여부. 새로고침해도 유지되도록 localStorage에 저장한다
+const COLLAPSE_KEY = "mm_checklist_collapsed";
+function loadCollapsed() {
+  try {
+    return localStorage.getItem(COLLAPSE_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+function saveCollapsed(v: boolean) {
+  try {
+    localStorage.setItem(COLLAPSE_KEY, v ? "1" : "0");
+  } catch {
+    // 저장할 수 없으면 이번 방문 동안만 유지
+  }
+}
+
 function ProfileForm({ me }: { me: Profile }) {
   const { user } = useApp();
   const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -168,6 +185,11 @@ export function MyPage() {
   const { openModal } = useModal();
   const [tab, setTabState] = useState<Tab>(savedTab);
   const setTab = (t: Tab) => setTabState((savedTab = t));
+  const [collapsed, setCollapsedState] = useState(loadCollapsed);
+  const toggleCollapsed = () => {
+    saveCollapsed(!collapsed);
+    setCollapsedState(!collapsed);
+  };
 
   if (!user || !me) return <LoginRequired title="🕵️ 탐정 수첩" message="로그인하면 플레이한 게임과 취향을 기록할 수 있어요." />;
 
@@ -263,15 +285,28 @@ export function MyPage() {
       <section className="card">
         <div className="section-head">
           <h2 className="section-title">게임 기록</h2>
-          <div className="seg">
-            {TABS.map(([t, label]) => (
-              <button key={t} className={tab === t ? "on" : ""} onClick={() => setTab(t)}>
-                {label}
-              </button>
-            ))}
+          <div className="section-head">
+            {!collapsed && (
+              <div className="seg">
+                {TABS.map(([t, label]) => (
+                  <button key={t} className={tab === t ? "on" : ""} onClick={() => setTab(t)}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
+            <button className="btn btn-ghost btn-sm" aria-expanded={!collapsed} onClick={toggleCollapsed}>
+              {collapsed ? "펼치기 ▾" : "접기 ▴"}
+            </button>
           </div>
         </div>
-        <Checklist me={me} tab={tab} onOpen={openDetail} />
+        {collapsed ? (
+          <p className="muted small">
+            게임 기록 {games.length}개가 숨겨져 있어요. (플레이 {playedIds.length} · 선호 {likedIds.length})
+          </p>
+        ) : (
+          <Checklist me={me} tab={tab} onOpen={openDetail} />
+        )}
       </section>
 
       <section className="card">
