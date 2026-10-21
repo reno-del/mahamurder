@@ -27,7 +27,7 @@ firebase deploy --only hosting     # predeploy에서 npm run build가 자동 실
 firebase deploy --only firestore   # firestore.rules / firestore.indexes.json 배포
 ```
 
-배포 순서: hosting을 먼저, 이어서 firestore 규칙을 배포합니다(규칙이 먼저 올라가면 예전 화면의 게임 추가가 실패함). `config/invite` 문서(`code` 필드)가 없으면 새 회원은 가입할 수 없습니다.
+배포 순서: hosting을 먼저, 이어서 firestore 규칙을 배포합니다(규칙이 먼저 올라가면 예전 화면의 게임 추가가 실패함). `config/invite` 문서(`code` 필드)가 없으면 새 회원은 가입할 수 없습니다(2026-10-21에 만들어 둠). 회원이 마이페이지 "친구 초대 링크 복사"에서 "초대 코드가 아직 설정되지 않았어요"를 보면 권한 문제가 아니라 이 문서가 없거나 `code`가 빈 것입니다.
 
 이 PC 환경에 관한 메모:
 - `git`은 `C:\Program Files\Git\cmd\git.exe`, `firebase`는 `%APPDATA%\npm\firebase.cmd`에 설치되어 있습니다. 설치 전에 열린 셸에서는 PATH에 잡히지 않으므로 전체 경로로 실행하세요.
@@ -39,6 +39,7 @@ firebase deploy --only firestore   # firestore.rules / firestore.indexes.json �
 - 게임 표지(`img.boardlife.co.kr`)는 다른 사이트에서 불러오는 것을 막아서 localhost나 헤드리스 캡처에서는 이미지가 깨집니다. Node `fetch`로는 정상으로 받아지므로, 캡처할 때는 요청을 가로채 Node에서 받은 이미지로 대신 응답합니다(`promo/capture.mjs` 참고).
 - Remotion 렌더링과 `promo` 캡처도 네트워크(Chrome Headless Shell 다운로드, 표지 이미지)가 필요하므로 샌드박스 밖에서 실행하세요.
 - `python`은 Windows 스토어 연결만 있어 실행되지 않습니다(종료 코드 49). 여러 군데를 한 번에 고치는 스크립트는 `node`로 작성하세요.
+- Firebase CLI 로그인 정보로 Firestore REST에 직접 쓰는 것은 auto mode 권한 검사가 막습니다. `config/*`처럼 콘솔에서만 바꾸는 데이터는 Claude in Chrome으로 Firebase 콘솔(사용자 로그인됨)에서 고치세요. 없는 문서 경로에서 "필드 추가"는 저장되지 않으니, 컬렉션의 "문서 추가"에서 문서 ID를 직접 입력하세요.
 - Java가 없어 Firestore 에뮬레이터를 쓸 수 없습니다. 규칙 문법은 `firebase deploy --only firestore:rules --dry-run`(샌드박스 밖)으로 컴파일만 확인합니다. 규칙에 검증을 추가하기 전에는 공개 REST(`https://firestore.googleapis.com/v1/projects/mahamuder/databases/(default)/documents/games?pageSize=300`)를 Node `fetch`로 읽어 기존 문서가 조건을 통과하는지 확인하세요.
 - 파일 전체를 셸로 다시 쓰면 Vite 개발 서버가 쓰는 도중의 빈 파일을 캐시할 수 있습니다. 콘솔에 `does not provide an export named` 오류가 뜨면 `dev-demo` 미리 보기를 껐다 켜세요.
 - 데모 모드를 브라우저 패널에서 테스트할 때는 `prompt()`/`confirm()` 창이 자동화를 멈춥니다. 먼저 JS로 `window.prompt = () => "탐정"; window.confirm = () => true`를 넣은 뒤 버튼을 누르세요.
