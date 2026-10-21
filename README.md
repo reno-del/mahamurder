@@ -121,7 +121,7 @@ flowchart LR
 
 ## 개발
 
-React 18, TypeScript, Vite, Firebase(Hosting, Firestore, Google 로그인)로 만들었습니다. 배포는 `react-ts` 브랜치에서 합니다.
+React 18, TypeScript, Vite, Firebase(Hosting, Firestore, Google 로그인)로 만들었습니다. 배포는 `main` 브랜치에서 합니다.
 
 ```bash
 npm install

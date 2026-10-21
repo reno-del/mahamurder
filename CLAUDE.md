@@ -7,11 +7,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 "머더미스터리 클럽": 지인들끼리 머더미스터리 게임 소개, 플레이 기록, 일정 모집을 공유하는 사이트입니다. React 18, TypeScript, Vite로 만들었고, Firebase Hosting과 Firestore, Google 로그인을 사용합니다. 라우팅은 react-router의 `BrowserRouter`로 경로 주소(`/games`, `/games/<id>`, `/schedule`, `/library`, `/mypage`)를 씁니다(라우트는 `main.tsx`, 상단 메뉴는 `components/Layout.tsx`). 예전 해시 주소(`#/games` 등)로 들어오면 `main.tsx`가 렌더링 전에 같은 경로로 바꿉니다. `/games/<id>`는 게임 목록 위에 그 게임의 상세 모달을 띄우고, 모달을 닫으면 `/games`로 돌아갑니다(`GamesPage`). 다른 페이지(마이페이지·보유 게임·일정)에서 여는 게임 상세는 주소를 바꾸지 않는 모달입니다. Firebase Hosting은 `firebase.json`의 `cleanUrls`와 `**` → `/index.html` rewrite로 이 주소들을 처리합니다.
 
 - Firebase 프로젝트 ID: `mahamuder` (`.firebaserc`), 배포 URL: https://mahamuder.web.app
-- GitHub: https://github.com/reno-del/mahamurder (저장소 이름 철자가 프로젝트 ID와 다름). GitHub 기본 브랜치는 아직 `main`이라 `react-ts`의 README는 레포 첫 화면에 보이지 않습니다.
+- GitHub: https://github.com/reno-del/mahamurder (저장소 이름 철자가 프로젝트 ID와 다름).
 - 커밋 작성자 이메일은 `85153521+reno-del@users.noreply.github.com`(레포 `git config user.email`)입니다. GitHub Contributors는 이 이메일로 계정을 찾으므로, 예전 `giwan328@naver.com`(kkk0328 계정으로 잡힘)으로 커밋하지 마세요.
 - 기능 소개 문서: `README.md`(마크다운, mermaid 다이어그램), `feature-overview.html`, `feature-guide.html`(번호 핀 안내서, `shots/*.png`를 참조하므로 Artifact로 올릴 때 `promo/public/shots/*`를 함께 올림). 셋 다 `promo/public/shots/`의 데모 스크린샷을 쓰므로, 화면이 바뀌면 `promo`의 `npm run capture`로 다시 찍고 핀 위치를 확인하세요.
 - 테스트와 린트 설정은 없습니다. 검증은 `npm run typecheck`와 브라우저 확인(로그인·쓰기 기능은 `npm run dev:demo`)으로 합니다. 브라우저 패널용 실행 설정은 `.claude/launch.json`의 `dev-demo`(포트 5173)입니다. 데모 모드의 데이터는 브라우저 localStorage(`mm_games`, `mm_users`, `mm_guests`, `mm_events`, `mm_me`)에 있어서, 여러 친구가 필요한 화면은 이 값을 직접 채워 테스트할 수 있습니다.
-- 브랜치: React 버전은 `react-ts`에 있고, 배포도 `react-ts`에서 합니다(2026-10-20부터). `main`은 아직 이전 버전(빌드 없는 순수 HTML/JS)이므로, `main`에서 `firebase deploy`를 하면 사이트가 이전 버전으로 되돌아갑니다.
+- 브랜치: `main` 하나만 쓰고 배포도 `main`에서 합니다. 예전 `react-ts` 브랜치는 2026-10-21에 `main`으로 합쳐서 없앴습니다. 이전 버전(빌드 없는 순수 HTML/JS)은 `main` 기록의 커밋 `474506c`에 남아 있습니다.
 - 홍보 영상: `promo/`는 사이트와 따로 쓰는 Remotion 패키지입니다(자체 `package.json`과 `node_modules`, 결과물 `promo/out/`은 gitignore). 다시 만드는 순서는 `npm run dev:demo` 실행 → `promo`에서 `npm run capture`(데모 화면 캡처, CSV로 예시 데이터 채움) → `node gen-audio.mjs`(효과음 합성, `src/timing.json` 기준) → `npm run render`입니다. 미리 보기는 `npm run studio`입니다.
 
 ## 명령어
