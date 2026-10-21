@@ -98,6 +98,8 @@ export interface Store {
   saveGame(game: GameInput): Promise<void>;
   deleteGame(id: string): Promise<void>;
   seedGames(): Promise<void>;
+  // 여러 게임을 한 번에 새로 등록한다 (CSV 가져오기)
+  importGames(games: GameInput[]): Promise<void>;
   // ownerUid의 게임을 빌리거나 반납한다
   rentGame(id: string, ownerUid: string, rental: Rental): Promise<void>;
   returnGame(id: string, ownerUid: string): Promise<void>;

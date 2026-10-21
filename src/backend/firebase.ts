@@ -131,6 +131,23 @@ export async function create(config: FirebaseConfig): Promise<Store> {
       SEED_GAMES.forEach((g) => batch.set(doc(collection(db, "games")), { ...g, createdBy, createdAt: serverTimestamp() }));
       await batch.commit();
     },
+    // 배치 하나에 500개까지라 400개씩 나눠 커밋한다. 중간에 실패하면 앞 배치는 이미 들어가 있으므로 몇 개까지 들어갔는지 알린다
+    async importGames(games) {
+      const CHUNK = 400;
+      for (let i = 0; i < games.length; i += CHUNK) {
+        const batch = writeBatch(db);
+        games.slice(i, i + CHUNK).forEach(({ id: _id, ...g }) =>
+          batch.set(doc(collection(db, "games")), { ...g, createdAt: serverTimestamp(), updatedAt: serverTimestamp() }),
+        );
+        try {
+          await batch.commit();
+        } catch (err) {
+          if (i === 0) throw err;
+          const msg = err instanceof Error ? err.message : String(err);
+          throw new Error(`${games.length}개 중 ${i}개만 등록하고 실패했어요: ${msg}`);
+        }
+      }
+    },
 
     rentGame: (id, ownerUid, rental) => updateDoc(doc(db, "games", id), { [`rentals.${ownerUid}`]: rental }),
     returnGame: (id, ownerUid) => updateDoc(doc(db, "games", id), { [`rentals.${ownerUid}`]: deleteField() }),

@@ -65,7 +65,12 @@ export function GameForm({ game }: { game?: Game }) {
         </label>
         <label>
           출시일
-          <input className="input" name="releaseDate" type="date" defaultValue={v(g.releaseDate)} />
+          {/* 보드라이프에서 옮긴 게임은 연도만("2018") 있다. date 입력은 이 값을 못 보여 주고 저장할 때 지워 버리므로 텍스트 칸으로 둔다 */}
+          {/^\d{4}$/.test(v(g.releaseDate)) ? (
+            <input className="input" name="releaseDate" pattern="\d{4}(-\d{2}-\d{2})?" placeholder="YYYY 또는 YYYY-MM-DD" defaultValue={v(g.releaseDate)} />
+          ) : (
+            <input className="input" name="releaseDate" type="date" defaultValue={v(g.releaseDate)} />
+          )}
         </label>
         <label>
           평가 (0~5)

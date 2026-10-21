@@ -8,6 +8,7 @@ import { showError } from "../../lib/toast";
 import { cleanName, playTime, players, prettyDate, stars, won, ymd } from "../../lib/format";
 import { GameDetail } from "./GameDetail";
 import { GameForm } from "./GameForm";
+import { CsvImport } from "./CsvImport";
 import { usePageMeta } from "../../lib/usePageMeta";
 import { gameDescription, toSeoGame } from "../../lib/seo";
 import { FAQ } from "../../data/site";
@@ -235,6 +236,9 @@ export function GamesPage() {
         </select>
         <button className="btn btn-primary" onClick={() => requireLogin(user) && openModal(<GameForm />)}>
           + 게임 추가
+        </button>
+        <button className="btn" onClick={() => requireLogin(user) && openModal(<CsvImport />)}>
+          CSV 가져오기
         </button>
       </div>
       <div className="grid">

@@ -107,6 +107,11 @@ export async function create(): Promise<Store> {
       SEED_GAMES.forEach((g) => (all[newId()] = { ...g, createdAt: now() }));
       write("games", all);
     },
+    async importGames(games) {
+      const all = read<Collection>("games", {});
+      games.forEach(({ id: _id, ...g }) => (all[newId()] = { ...g, createdAt: now(), updatedAt: now() }));
+      write("games", all);
+    },
 
     async rentGame(id, ownerUid, rental) {
       update("games", id, (g) => setPath(g, `rentals.${ownerUid}`, rental));
