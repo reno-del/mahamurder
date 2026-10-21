@@ -6,9 +6,18 @@ import { showError } from "../lib/toast";
 import { useLiveStructuredData } from "../lib/usePageMeta";
 
 function AuthBox() {
-  const { user, authReady } = useApp();
+  const { user, outsider, authReady } = useApp();
   const name = useMyName();
   if (!authReady) return <div className="auth" />;
+  if (outsider)
+    return (
+      <div className="auth">
+        <span className="auth-name">{outsider.name} (초대 전)</span>
+        <button className="btn btn-ghost btn-sm" onClick={() => store.logout()}>
+          로그아웃
+        </button>
+      </div>
+    );
   if (!user)
     return (
       <div className="auth">
@@ -59,8 +68,23 @@ export function Layout({ children }: { children: ReactNode }) {
   );
 }
 
-/** 로그인이 필요한 페이지의 안내 화면 */
+/** 로그인이 필요한 페이지의 안내 화면. 로그인했지만 회원이 아니면 초대 안내를 보여 준다 */
 export function LoginRequired({ title, message }: { title: string; message: string }) {
+  const { outsider } = useApp();
+  if (outsider)
+    return (
+      <section className="empty big">
+        <h2>{title}</h2>
+        <p className="muted">
+          친구들끼리만 쓰는 공간이에요. 이미 쓰고 있는 친구에게 초대 링크를 받아 열어 주세요.
+          <br />
+          다른 Google 계정으로 들어왔다면 로그아웃 후 다시 로그인해 보세요.
+        </p>
+        <button className="btn" onClick={() => store.logout()}>
+          로그아웃
+        </button>
+      </section>
+    );
   return (
     <section className="empty big">
       <h2>{title}</h2>

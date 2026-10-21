@@ -64,10 +64,18 @@ export async function create(): Promise<Store> {
     write("games", games);
   }
 
-  return {
+  const store: Store = {
     mode: "local",
 
-    onUser: (cb) => watch("me", cb),
+    // 데모에서는 로그인하면 회원이다. 비회원 화면은 mm_me에 member: false를 넣어 확인할 수 있다 (초대 코드는 "demo")
+    onUser: (cb) => watch<AppUser | null>("me", (u) => cb(u && { ...u, member: u.member !== false })),
+    async join(code) {
+      const me = read<AppUser | null>("me", null);
+      if (!me) return store.login();
+      if (code !== "demo") throw new Error("초대 링크가 올바르지 않거나 만료됐어요");
+      write("me", { ...me, member: true });
+    },
+    getInviteCode: async () => "demo",
     async login() {
       const name = prompt("데모 모드: 사용할 닉네임을 입력하세요", "탐정");
       if (!name) return;
@@ -76,7 +84,7 @@ export async function create(): Promise<Store> {
       const uid = found ? found[0] : newId();
       users[uid] = { ...(users[uid] || {}), googleName: name, photo: "" };
       write("users", users);
-      write("me", { uid, name, photo: "" });
+      write("me", { uid, name, photo: "", member: true });
     },
     async logout() {
       write("me", null);
@@ -148,4 +156,5 @@ export async function create(): Promise<Store> {
       write("events", all);
     },
   };
+  return store;
 }

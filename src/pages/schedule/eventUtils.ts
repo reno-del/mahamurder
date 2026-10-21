@@ -1,4 +1,5 @@
 import type { GameEvent, Profile } from "../../types";
+import { ymd } from "../../lib/format";
 
 export const count = (e: GameEvent) => Object.keys(e.participants || {}).length;
 
@@ -21,4 +22,10 @@ export function dday(date: string) {
 // 머더미스터리는 한 번만 플레이할 수 있으므로, 이미 해 본 참가자를 경고로 보여준다.
 export function alreadyPlayed(e: GameEvent, profiles: Profile[]) {
   return Object.keys(e.participants || {}).filter((uid) => profiles.find((p) => p.id === uid)?.played?.[e.gameId]);
+}
+
+// 최근 30일 안에 참여한 지난 모임인데 아직 그 게임의 플레이 기록이나 별점이 없으면 기록을 권한다
+export function needsRecord(e: GameEvent, uid: string, me: Profile | null) {
+  const monthAgo = ymd(new Date(Date.now() - 30 * 864e5));
+  return e.date < ymd() && e.date >= monthAgo && !!e.participants?.[uid] && !me?.played?.[e.gameId]?.rating;
 }

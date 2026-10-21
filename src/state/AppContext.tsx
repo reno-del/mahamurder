@@ -18,12 +18,17 @@ export interface Copy {
 }
 
 interface AppState {
+  /** 로그인한 회원. 로그인했어도 초대받지 않았으면 null이고 outsider에 들어간다 */
   user: AppUser | null;
+  /** 로그인은 했지만 회원이 아닌 사람 (초대 링크 안내용) */
+  outsider: AppUser | null;
   authReady: boolean;
   games: Game[];
   profiles: Profile[];
   guests: Guest[];
   events: GameEvent[];
+  /** 일정 목록을 한 번이라도 받았는지 (공유 링크의 일정이 지워졌는지 가릴 때 씀) */
+  eventsReady: boolean;
   /** 로그인한 사용자의 프로필. 로그아웃 상태면 null, 문서가 아직 없으면 { id } */
   me: Profile | null;
 }
@@ -31,12 +36,15 @@ interface AppState {
 const AppContext = createContext<AppState | null>(null);
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AppUser | null>(null);
+  const [account, setAccount] = useState<AppUser | null>(null);
+  const user = account?.member ? account : null;
+  const outsider = account && !account.member ? account : null;
   const [authReady, setAuthReady] = useState(false);
   const [games, setGames] = useState<Game[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [guests, setGuests] = useState<Guest[]>([]);
   const [events, setEvents] = useState<GameEvent[]>([]);
+  const [eventsReady, setEventsReady] = useState(false);
 
   // 게임 목록은 누구나 볼 수 있다
   useEffect(() => store.watchGames(setGames), []);
@@ -44,27 +52,36 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(
     () =>
       store.onUser((u) => {
-        setUser(u);
+        setAccount(u);
+        signedInOutsider = !!u && !u.member;
         setAuthReady(true);
       }),
     []
   );
 
-  // 프로필·미등록 친구·일정은 로그인한 사람만 읽을 수 있다 (firestore.rules)
+  // 프로필·미등록 친구·일정은 회원만 읽을 수 있다 (firestore.rules)
   const uid = user?.uid;
   useEffect(() => {
     setProfiles([]);
     setGuests([]);
     setEvents([]);
+    setEventsReady(false);
     if (!uid) return;
-    const unsubs = [store.watchProfiles(setProfiles), store.watchGuests(setGuests), store.watchEvents(setEvents)];
+    const unsubs = [
+      store.watchProfiles(setProfiles),
+      store.watchGuests(setGuests),
+      store.watchEvents((evs) => {
+        setEvents(evs);
+        setEventsReady(true);
+      }),
+    ];
     return () => unsubs.forEach((u) => u());
   }, [uid]);
 
   const value = useMemo<AppState>(() => {
     const me = user ? profiles.find((p) => p.id === user.uid) || { id: user.uid } : null;
-    return { user, authReady, games, profiles, guests, events, me };
-  }, [user, authReady, games, profiles, guests, events]);
+    return { user, outsider, authReady, games, profiles, guests, events, eventsReady, me };
+  }, [user, outsider, authReady, games, profiles, guests, events, eventsReady]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }
@@ -75,9 +92,16 @@ export function useApp() {
   return ctx;
 }
 
-/** 로그인 안 했으면 로그인 창을 띄우고 false */
+// requireLogin은 컴포넌트 밖에서도 불리므로 비회원 로그인 여부를 모듈 변수로 둔다
+let signedInOutsider = false;
+
+/** 회원이 아니면 로그인 창을 띄우거나(로그아웃 상태) 초대 안내를 하고 false */
 export function requireLogin(user: AppUser | null) {
   if (user) return true;
+  if (signedInOutsider) {
+    toast("초대받은 친구만 쓸 수 있어요. 친구에게 초대 링크를 받아 주세요");
+    return false;
+  }
   toast("로그인이 필요해요");
   store.login().catch(showError);
   return false;
@@ -121,6 +145,14 @@ export function useGameHelpers() {
       if (!requireLogin(user)) return;
       const on = me?.played?.[gid];
       await store.setProfileField(user!.uid, `played.${gid}`, on ? null : { rating: 0, date: ymd() }).catch(showError);
+    },
+    // 모임을 다녀온 뒤 그 날짜로 플레이 기록을 남긴다
+    async markPlayed(gid: string, date: string) {
+      if (!requireLogin(user)) return;
+      await store
+        .setProfileField(user!.uid, `played.${gid}`, { rating: 0, date })
+        .then(() => toast("플레이 기록을 남겼어요. 별점도 매겨 주세요!"))
+        .catch(showError);
     },
     async toggleLiked(gid: string) {
       if (!requireLogin(user)) return;

@@ -8,6 +8,7 @@ import { GamesPage } from "./pages/games/GamesPage";
 import { SchedulePage } from "./pages/schedule/SchedulePage";
 import { MyPage } from "./pages/mypage/MyPage";
 import { LibraryPage } from "./pages/library/LibraryPage";
+import { JoinPage } from "./pages/join/JoinPage";
 import "./styles/style.css";
 
 // 예전 해시 주소(#/games, #/schedule/new/<id> 등)로 들어오면 같은 경로 주소로 바꾼다.
@@ -36,8 +37,10 @@ createRoot(document.getElementById("root")!).render(
               <Route path="/games/:gameId" element={<GamesPage />} />
               <Route path="/schedule" element={<SchedulePage />} />
               <Route path="/schedule/new/:gameId" element={<SchedulePage />} />
+              <Route path="/schedule/:eventId" element={<SchedulePage />} />
               <Route path="/library" element={<LibraryPage />} />
               <Route path="/mypage" element={<MyPage />} />
+              <Route path="/join/:code" element={<JoinPage />} />
               <Route path="*" element={<Navigate to="/games" replace />} />
             </Routes>
           </Layout>

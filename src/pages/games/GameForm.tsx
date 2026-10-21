@@ -1,12 +1,14 @@
 import type { FormEvent } from "react";
 import { store } from "../../store";
 import { useModal } from "../../components/Modal";
+import { useApp } from "../../state/AppContext";
 import { showError, toast } from "../../lib/toast";
 import type { Game, GameInput } from "../../types";
 
 const DIFFICULTIES = ["", "쉬움", "보통", "어려움"];
 
 export function GameForm({ game }: { game?: Game }) {
+  const { user } = useApp();
   const { closeModal } = useModal();
   const g: Partial<Game> = game || {};
   const v = (x: unknown) => (x ?? "") as string;
@@ -34,6 +36,8 @@ export function GameForm({ game }: { game?: Game }) {
       link: f.link.trim(),
       description: f.description.trim(),
       localized: f.localized === "yes",
+      // 등록자는 처음 추가할 때만 남긴다 (수정할 때는 merge로 기존 값 유지)
+      ...(!g.id && user && { createdBy: user.uid }),
     };
     try {
       await store.saveGame(data);

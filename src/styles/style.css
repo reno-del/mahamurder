@@ -326,8 +326,10 @@ textarea.input { resize: vertical; }
 .event { display: flex; flex-direction: column; gap: 6px; }
 .event p { margin: 0; }
 .event.past { opacity: .7; }
+.to-record .event.past { opacity: 1; }
 .event-head { display: flex; justify-content: space-between; align-items: start; gap: 8px; }
 .event-head h3 { font-size: 18px; margin: 2px 0 0; }
+.modal .event-head { padding-right: 36px; } /* 모달 닫기 버튼과 상태 배지가 겹치지 않게 */
 .event-game { font-size: 16px; font-weight: 700; }
 .dday { font-size: 12px; font-weight: 700; color: var(--accent); }
 .status { font-size: 12px; font-weight: 700; padding: 3px 9px; border-radius: 999px; white-space: nowrap; }

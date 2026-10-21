@@ -16,6 +16,7 @@ export interface Game {
   link?: string;
   description?: string;
   localized?: boolean; // 정발 여부. 값이 없으면 정발된 게임으로 본다
+  createdBy?: string; // 등록한 사람 uid. 이 사람만 삭제할 수 있다 (값이 없는 예전 게임은 누구나)
   // 보유자 uid -> 그 사람의 게임을 누가 빌려 갔는지. 보유 여부 자체는 users/{uid}.owned에 있다
   rentals?: Record<string, Rental>;
 }
@@ -76,6 +77,8 @@ export interface AppUser {
   uid: string;
   name: string;
   photo: string;
+  // 초대받아 users 문서가 있는 회원인지. 아니면 로그인만 했고 아무것도 읽거나 쓸 수 없다 (firestore.rules의 member())
+  member: boolean;
 }
 
 export type Unsubscribe = () => void;
@@ -86,6 +89,10 @@ export interface Store {
   onUser(cb: (user: AppUser | null) => void): Unsubscribe;
   login(): Promise<void>;
   logout(): Promise<void>;
+  // 초대 코드로 회원이 된다. 로그인 전이면 코드를 기억해 두고 로그인부터 한다. 코드가 틀리면 예외
+  join(code: string): Promise<void>;
+  // 회원끼리 공유하는 초대 코드 (없으면 null)
+  getInviteCode(): Promise<string | null>;
 
   watchGames(cb: (games: Game[]) => void): Unsubscribe;
   saveGame(game: GameInput): Promise<void>;

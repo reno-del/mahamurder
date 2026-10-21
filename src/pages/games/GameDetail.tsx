@@ -3,13 +3,13 @@ import { store } from "../../store";
 import { requireLogin, useApp, useGameHelpers } from "../../state/AppContext";
 import { useModal } from "../../components/Modal";
 import { Cover } from "../../components/Cover";
-import { showError } from "../../lib/toast";
-import { displayName, playTime, players, prettyDate, stars, won } from "../../lib/format";
+import { showError, toast } from "../../lib/toast";
+import { displayName, playTime, players, prettyDate, safeUrl, stars, won } from "../../lib/format";
 import { RentalButton } from "../../components/RentalButton";
 import { GameForm } from "./GameForm";
 
 export function GameDetail({ gameId }: { gameId: string }) {
-  const { user, me } = useApp();
+  const { user, me, events } = useApp();
   const { gameById, friendRating, playedBy, togglePlayed, toggleLiked, setRating, copiesOf, toggleOwned } = useGameHelpers();
   const { openModal, closeModal } = useModal();
   const navigate = useNavigate();
@@ -23,8 +23,17 @@ export function GameDetail({ gameId }: { gameId: string }) {
   const owned = me?.owned?.[gameId];
   const copies = copiesOf(g);
 
+  // 실수로 지우지 않도록 등록한 사람만, 친구들의 기록이 없을 때만 삭제할 수 있다
+  const canDelete = !!user && (!g.createdBy || g.createdBy === user.uid);
+  const linked = [
+    friends.length && `플레이 기록 ${friends.length}개`,
+    copies.length && `보유 ${copies.length}명`,
+    events.filter((e) => e.gameId === gameId).length && "모집 공지",
+  ].filter(Boolean);
   const remove = async () => {
-    if (!requireLogin(user) || !confirm(`'${g.name}'을(를) 삭제할까요?`)) return;
+    if (!requireLogin(user)) return;
+    if (linked.length) return toast(`친구들의 기록(${linked.join(", ")})이 남아 있어 삭제할 수 없어요`);
+    if (!confirm(`'${g.name}'을(를) 삭제할까요?`)) return;
     await store.deleteGame(gameId).catch(showError);
     closeModal();
   };
@@ -86,9 +95,9 @@ export function GameDetail({ gameId }: { gameId: string }) {
         </div>
       </div>
       {g.description && <p className="desc">{g.description}</p>}
-      {g.link && (
+      {safeUrl(g.link) && (
         <p>
-          <a href={g.link} target="_blank" rel="noopener">
+          <a href={safeUrl(g.link)} target="_blank" rel="noopener noreferrer">
             구매 / 상세 페이지 ↗
           </a>
         </p>
@@ -160,14 +169,18 @@ export function GameDetail({ gameId }: { gameId: string }) {
           {user ? "아직 아무도 안 해 봤어요 — 모두 처음이라 모집하기 좋아요!" : "로그인하면 친구들의 기록을 볼 수 있어요."}
         </p>
       )}
-      <div className="detail-footer">
-        <button className="btn btn-ghost btn-sm" onClick={() => requireLogin(user) && openModal(<GameForm game={g} />)}>
-          정보 수정
-        </button>
-        <button className="btn btn-ghost btn-sm danger" onClick={remove}>
-          삭제
-        </button>
-      </div>
+      {user && (
+        <div className="detail-footer">
+          <button className="btn btn-ghost btn-sm" onClick={() => openModal(<GameForm game={g} />)}>
+            정보 수정
+          </button>
+          {canDelete && (
+            <button className="btn btn-ghost btn-sm danger" onClick={remove}>
+              삭제
+            </button>
+          )}
+        </div>
+      )}
     </>
   );
 }

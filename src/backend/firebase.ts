@@ -11,6 +11,7 @@ import {
   getFirestore,
   collection,
   doc,
+  getDoc,
   onSnapshot,
   setDoc,
   addDoc,
@@ -28,27 +29,73 @@ import type { AppUser, Game, GameEvent, Guest, Profile, Store } from "../types";
 
 const toList = <T>(snap: QuerySnapshot) => snap.docs.map((d) => ({ id: d.id, ...d.data() }) as T);
 
+// 초대 링크로 들어온 뒤 로그인(팝업·리다이렉트·카톡에서 외부 브라우저로 이동)하는 동안 코드를 기억해 둔다
+const INVITE_KEY = "mm_invite";
+function loadPendingInvite() {
+  try {
+    return localStorage.getItem(INVITE_KEY);
+  } catch {
+    return null;
+  }
+}
+function savePendingInvite(code: string | null) {
+  try {
+    if (code) localStorage.setItem(INVITE_KEY, code);
+    else localStorage.removeItem(INVITE_KEY);
+  } catch {
+    /* 저장 불가(사생활 보호 모드 등) */
+  }
+}
+
 export async function create(config: FirebaseConfig): Promise<Store> {
   const app = initializeApp(config);
   const auth = getAuth(app);
   const db = getFirestore(app);
+  let emitUser: ((user: AppUser | null) => void) | undefined;
 
-  return {
+  // users 문서가 있으면 회원이다. 없으면 기억해 둔 초대 코드로 만들어 본다 (규칙이 config/invite의 코드와 비교)
+  async function checkMember(user: AppUser): Promise<AppUser> {
+    const ref = doc(db, "users", user.uid);
+    const profile = { googleName: user.name, photo: user.photo, lastLogin: serverTimestamp() };
+    if ((await getDoc(ref)).exists()) {
+      await updateDoc(ref, profile);
+      return { ...user, member: true };
+    }
+    const code = loadPendingInvite();
+    if (!code) return user;
+    savePendingInvite(null);
+    try {
+      await setDoc(ref, { ...profile, inviteCode: code });
+      return { ...user, member: true };
+    } catch {
+      return user;
+    }
+  }
+
+  const store: Store = {
     mode: "firebase",
 
     // ---------- 인증 ----------
     onUser(cb) {
+      emitUser = cb;
       return onAuthStateChanged(auth, async (u) => {
         if (!u) return cb(null);
-        const user: AppUser = { uid: u.uid, name: u.displayName || "익명", photo: u.photoURL || "" };
-        // 프로필 문서가 없으면 만들어 둔다 (이후 updateDoc 사용 가능)
-        await setDoc(
-          doc(db, "users", u.uid),
-          { googleName: user.name, photo: user.photo, lastLogin: serverTimestamp() },
-          { merge: true }
-        );
-        cb(user);
+        const user: AppUser = { uid: u.uid, name: u.displayName || "익명", photo: u.photoURL || "", member: false };
+        cb(await checkMember(user));
       });
+    },
+    async join(code) {
+      savePendingInvite(code);
+      const u = auth.currentUser;
+      // 로그인 전이면 로그인 후 onUser에서 기억해 둔 코드로 가입한다
+      if (!u) return store.login();
+      const user = await checkMember({ uid: u.uid, name: u.displayName || "익명", photo: u.photoURL || "", member: false });
+      emitUser?.(user);
+      if (!user.member) throw new Error("초대 링크가 올바르지 않거나 만료됐어요");
+    },
+    async getInviteCode() {
+      const snap = await getDoc(doc(db, "config", "invite"));
+      return (snap.data()?.code as string | undefined) || null;
     },
     async login() {
       // 카카오톡 인앱 브라우저는 Google 로그인을 막으므로 외부 브라우저로 다시 연다
@@ -80,7 +127,8 @@ export async function create(config: FirebaseConfig): Promise<Store> {
     deleteGame: (id) => deleteDoc(doc(db, "games", id)),
     async seedGames() {
       const batch = writeBatch(db);
-      SEED_GAMES.forEach((g) => batch.set(doc(collection(db, "games")), { ...g, createdAt: serverTimestamp() }));
+      const createdBy = auth.currentUser?.uid;
+      SEED_GAMES.forEach((g) => batch.set(doc(collection(db, "games")), { ...g, createdBy, createdAt: serverTimestamp() }));
       await batch.commit();
     },
 
@@ -119,4 +167,5 @@ export async function create(config: FirebaseConfig): Promise<Store> {
     leaveEvent: (id, uid) => updateDoc(doc(db, "events", id), { [`participants.${uid}`]: deleteField() }),
     deleteEvent: (id) => deleteDoc(doc(db, "events", id)),
   };
+  return store;
 }

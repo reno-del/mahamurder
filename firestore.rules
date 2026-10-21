@@ -3,31 +3,88 @@ service cloud.firestore {
   match /databases/{database}/documents {
     function signedIn() { return request.auth != null; }
 
-    // 게임 소개: 누구나 볼 수 있고, 로그인한 친구는 추가/수정/삭제 가능
+    // 회원 = users 문서가 있는 사람. users 문서는 초대 코드를 알아야 처음 만들 수 있다 (아래 users 규칙).
+    // 그래서 아무 Google 계정으로 로그인해도 초대받지 않았으면 읽기·쓰기를 할 수 없다
+    function member() {
+      return signedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    // ---------- 게임 필드 검증 ----------
+    function optStr(d, k, max) { return !(k in d) || (d[k] is string && d[k].size() <= max); }
+    function optNum(d, k) { return !(k in d) || d[k] == null || d[k] is number; }
+    // 링크·표지는 비어 있거나 http(s) 주소만 (javascript: 등으로 스크립트를 심지 못하게)
+    function optUrl(d, k) {
+      return !(k in d) || d[k] == '' || (d[k] is string && d[k].size() <= 500 && d[k].matches('^https?://.+'));
+    }
+    function validGame(d) {
+      return d.name is string && d.name.size() > 0 && d.name.size() <= 100
+        && optStr(d, 'publisher', 100) && optStr(d, 'description', 3000)
+        && optStr(d, 'releaseDate', 20) && optStr(d, 'difficulty', 20)
+        && optNum(d, 'price') && optNum(d, 'rating') && optNum(d, 'playTime')
+        && optNum(d, 'minPlayers') && optNum(d, 'maxPlayers')
+        && optUrl(d, 'imageUrl') && optUrl(d, 'link')
+        && (!('genres' in d) || (d.genres is list && d.genres.size() <= 10))
+        && (!('localized' in d) || d.localized is bool);
+    }
+    // 게임 정보 수정 화면에서 바꿀 수 있는 필드. createdBy·createdAt·rentals는 여기서 못 바꾼다
+    function editableFields() {
+      return ['name', 'publisher', 'price', 'releaseDate', 'rating', 'minPlayers', 'maxPlayers', 'playTime',
+        'difficulty', 'genres', 'imageUrl', 'link', 'description', 'localized', 'updatedAt'];
+    }
+    function editsGame() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(editableFields())
+        && validGame(request.resource.data);
+    }
+    // 대여·반납: rentals만, 한 번에 한 벌만 바꿀 수 있다
+    function changesOneRental() {
+      let before = resource.data.get('rentals', {});
+      let after = request.resource.data.get('rentals', {});
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['rentals'])
+        && after is map && after.size() <= 50
+        && after.diff(before).affectedKeys().size() == 1;
+    }
+
+    // 게임 소개: 누구나 볼 수 있고(사이트 소개·검색 노출), 회원은 추가/수정 가능.
+    // 삭제는 등록한 사람만 (createdBy가 없는 예전 게임은 회원 누구나). 등록자는 바꿀 수 없다
     match /games/{gameId} {
       allow read: if true;
-      allow write: if signedIn();
+      allow create: if member()
+        && gameId.matches('^[A-Za-z0-9_-]{1,64}$')
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.keys().hasOnly(editableFields().concat(['createdBy', 'createdAt']))
+        && validGame(request.resource.data);
+      allow update: if member() && (editsGame() || changesOneRental());
+      allow delete: if member() && resource.data.get('createdBy', request.auth.uid) == request.auth.uid;
     }
 
-    // 프로필: 로그인한 친구끼리 서로 볼 수 있고, 본인 문서만 수정 가능
+    // 초대 코드: 회원만 읽을 수 있고(초대 링크 복사), 바꾸는 것은 Firebase 콘솔에서만
+    match /config/invite {
+      allow read: if member();
+    }
+
+    // 프로필: 회원끼리 서로 볼 수 있고, 본인 문서만 수정 가능.
+    // 처음 만들 때(=가입)는 초대 코드가 맞아야 한다. config/invite가 없으면 새 가입은 모두 막힌다
     match /users/{uid} {
-      allow read: if signedIn();
-      allow write: if signedIn() && request.auth.uid == uid;
+      allow read: if member() || (signedIn() && request.auth.uid == uid);
+      allow create: if signedIn() && request.auth.uid == uid
+        && request.resource.data.inviteCode == get(/databases/$(database)/documents/config/invite).data.code;
+      allow update: if signedIn() && request.auth.uid == uid
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['inviteCode']);
     }
 
-    // 가입하지 않은 친구(게임 보유자): 로그인한 친구는 누구나 보고 관리 가능
+    // 가입하지 않은 친구(게임 보유자): 회원은 누구나 보고 관리 가능
     match /guests/{guestId} {
-      allow read, write: if signedIn();
+      allow read, write: if member();
     }
 
     // 일정 모집 공지
     match /events/{eventId} {
-      allow read: if signedIn();
-      allow create: if signedIn() && request.resource.data.hostUid == request.auth.uid;
+      allow read: if member();
+      allow create: if member() && request.resource.data.hostUid == request.auth.uid;
       // 주최자는 수정/삭제 가능
-      allow update, delete: if signedIn() && resource.data.hostUid == request.auth.uid;
+      allow update, delete: if member() && resource.data.hostUid == request.auth.uid;
       // 다른 사람은 참가자 목록에서 '자기 자신'만 추가/삭제 가능
-      allow update: if signedIn()
+      allow update: if member()
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['participants'])
         && request.resource.data.participants.diff(resource.data.participants).affectedKeys().hasOnly([request.auth.uid]);
     }

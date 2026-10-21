@@ -1,8 +1,9 @@
+import { useNavigate } from "react-router-dom";
 import { store } from "../../store";
-import { useApp, useMyName } from "../../state/AppContext";
+import { useApp, useGameHelpers, useMyName } from "../../state/AppContext";
 import { useModal } from "../../components/Modal";
 import { showError, toast } from "../../lib/toast";
-import { displayName, prettyDate, ymd } from "../../lib/format";
+import { cleanName, displayName, prettyDate, ymd } from "../../lib/format";
 import { GameDetail } from "../games/GameDetail";
 import { EventForm } from "./EventForm";
 import { alreadyPlayed, count, dday, status } from "./eventUtils";
@@ -12,6 +13,8 @@ export function EventCard({ event: e }: { event: GameEvent }) {
   const { user, me, profiles } = useApp();
   const myName = useMyName();
   const { openModal, closeModal } = useModal();
+  const { markPlayed, setRating } = useGameHelpers();
+  const navigate = useNavigate();
   if (!user) return null;
 
   const nameOf = (uid: string, fallback: string) => displayName(profiles.find((p) => p.id === uid)) || fallback;
@@ -21,6 +24,7 @@ export function EventCard({ event: e }: { event: GameEvent }) {
   const isHost = e.hostUid === user.uid;
   const past = e.date < ymd();
   const spoiled = alreadyPlayed(e, profiles);
+  const myPlay = me?.played?.[e.gameId];
   const pct = Math.min(100, (n / (e.maxPlayers || e.minPlayers || n || 1)) * 100);
 
   const run = (fn: () => Promise<void>) => () => fn().catch(showError);
@@ -33,6 +37,30 @@ export function EventCard({ event: e }: { event: GameEvent }) {
     await store.leaveEvent(e.id, user.uid);
     toast("참여를 취소했어요");
   });
+  // 카톡방에 그대로 붙여 넣을 수 있게 일정 요약과 링크를 함께 복사한다
+  const share = run(async () => {
+    const limit = e.minPlayers === e.maxPlayers ? e.maxPlayers : `${e.minPlayers}~${e.maxPlayers}`;
+    const text = [
+      `[머더미스터리 모임] ${cleanName(e.gameName)}`,
+      `${prettyDate(e.date)} ${e.time || ""}${e.place ? ` · 📍${e.place}` : ""}`.trim(),
+      `현재 ${n}/${limit}명 모집 중`,
+      `${location.origin}/schedule/${e.id}`,
+    ].join("\n");
+    try {
+      await navigator.clipboard.writeText(text);
+      toast("공유 링크를 복사했어요. 카톡방에 붙여 넣어 보세요");
+    } catch {
+      // 카톡 인앱 브라우저 등 클립보드를 못 쓰는 곳에서는 직접 복사하게 보여 준다
+      prompt("아래 내용을 복사해 공유하세요", text);
+    }
+  });
+  // 링크로 연 일정 모달에서 게임 상세로 바뀐 뒤 닫으면 주소도 /schedule 로 돌린다
+  const openGame = () =>
+    openModal(<GameDetail gameId={e.gameId} />, {
+      onClose: () => {
+        if (window.location.pathname === `/schedule/${e.id}`) navigate("/schedule");
+      },
+    });
   const remove = run(async () => {
     if (!confirm("이 모집 공지를 삭제할까요?")) return;
     await store.deleteEvent(e.id);
@@ -48,9 +76,9 @@ export function EventCard({ event: e }: { event: GameEvent }) {
             {prettyDate(e.date)} {e.time || ""}
           </h3>
         </div>
-        <span className={`status status-${st.cls}`}>{st.label}</span>
+        {!past && <span className={`status status-${st.cls}`}>{st.label}</span>}
       </div>
-      <button className="link-btn event-game" onClick={() => openModal(<GameDetail gameId={e.gameId} />)}>
+      <button className="link-btn event-game" onClick={openGame}>
         🎭 {e.gameName}
       </button>
       <p className="muted small">
@@ -70,8 +98,34 @@ export function EventCard({ event: e }: { event: GameEvent }) {
           </li>
         ))}
       </ul>
-      {spoiled.length > 0 && (
-        <p className="warn">⚠ 이미 플레이한 참가자: {spoiled.map((uid) => nameOf(uid, e.participants![uid])).join(", ")}</p>
+      {spoiled.length > 0 &&
+        (past ? (
+          <p className="muted small">✔ 플레이 기록 남긴 참가자: {spoiled.map((uid) => nameOf(uid, e.participants![uid])).join(", ")}</p>
+        ) : (
+          <p className="warn">⚠ 이미 플레이한 참가자: {spoiled.map((uid) => nameOf(uid, e.participants![uid])).join(", ")}</p>
+        ))}
+      {past && mine && (
+        <div className="event-actions">
+          {myPlay ? (
+            <div className="my-rating">
+              내 평점{" "}
+              {[1, 2, 3, 4, 5].map((r) => (
+                <button
+                  key={r}
+                  className={`star-btn sm ${myPlay.rating >= r ? "on" : ""}`}
+                  aria-label={`${r}점`}
+                  onClick={() => setRating(e.gameId, r)}
+                >
+                  ★
+                </button>
+              ))}
+            </div>
+          ) : (
+            <button className="btn btn-primary btn-sm" onClick={() => markPlayed(e.gameId, e.date)}>
+              ✔ 다녀왔어요 (플레이 기록)
+            </button>
+          )}
+        </div>
       )}
       {!past && (
         <div className="event-actions">
@@ -86,6 +140,9 @@ export function EventCard({ event: e }: { event: GameEvent }) {
               참여하기
             </button>
           )}
+          <button className="btn btn-sm" onClick={share}>
+            🔗 공유 링크 복사
+          </button>
           {isHost && (
             <>
               <button className="btn btn-ghost btn-sm" onClick={() => openModal(<EventForm event={e} />)}>

@@ -31,7 +31,10 @@ export const playTime = (m?: number | null) =>
   !m ? "" : m >= 60 ? `${Math.floor(m / 60)}시간${m % 60 ? ` ${m % 60}분` : ""}` : `${m}분`;
 
 // 예시 데이터의 "예시) " 접두어 제거
-export const cleanName = (name?: string) => String(name || "").replace(/^예시\)\s*/, "");
+// 사용자가 입력한 주소는 http(s)만 링크로 쓴다. React 18은 javascript: 주소를 경고만 하고 그대로 넣기 때문
+export const safeUrl = (url?: string) => (url && /^https?:\/\//i.test(url.trim()) ? url.trim() : "");
+
+export const cleanName =(name?: string) => String(name || "").replace(/^예시\)\s*/, "");
 
 // 닉네임(마이페이지에서 설정) > 구글 이름
 export const displayName = (p?: Profile | null) => (p && (p.nickname || p.googleName)) || "";

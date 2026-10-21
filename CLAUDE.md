@@ -10,6 +10,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - GitHub: https://github.com/reno-del/mahamurder (저장소 이름 철자가 프로젝트 ID와 다름)
 - 테스트와 린트 설정은 없습니다. 검증은 `npm run typecheck`와 브라우저 확인(로그인·쓰기 기능은 `npm run dev:demo`)으로 합니다. 브라우저 패널용 실행 설정은 `.claude/launch.json`의 `dev-demo`(포트 5173)입니다. 데모 모드의 데이터는 브라우저 localStorage(`mm_games`, `mm_users`, `mm_guests`, `mm_events`, `mm_me`)에 있어서, 여러 친구가 필요한 화면은 이 값을 직접 채워 테스트할 수 있습니다.
 - 브랜치: React 버전은 `react-ts`에 있고, 배포도 `react-ts`에서 합니다(2026-10-20부터). `main`은 아직 이전 버전(빌드 없는 순수 HTML/JS)이므로, `main`에서 `firebase deploy`를 하면 사이트가 이전 버전으로 되돌아갑니다.
+- 홍보 영상: `promo/`는 사이트와 따로 쓰는 Remotion 패키지입니다(자체 `package.json`과 `node_modules`, 결과물 `promo/out/`은 gitignore). 다시 만드는 순서는 `npm run dev:demo` 실행 → `promo`에서 `npm run capture`(데모 화면 캡처, CSV로 예시 데이터 채움) → `node gen-audio.mjs`(효과음 합성, `src/timing.json` 기준) → `npm run render`입니다. 미리 보기는 `npm run studio`입니다.
 
 ## 명령어
 
@@ -24,10 +25,19 @@ firebase deploy --only hosting     # predeploy에서 npm run build가 자동 실
 firebase deploy --only firestore   # firestore.rules / firestore.indexes.json 배포
 ```
 
+배포 순서: hosting을 먼저, 이어서 firestore 규칙을 배포합니다(규칙이 먼저 올라가면 예전 화면의 게임 추가가 실패함). `config/invite` 문서(`code` 필드)가 없으면 새 회원은 가입할 수 없습니다.
+
 이 PC 환경에 관한 메모:
 - `git`은 `C:\Program Files\Git\cmd\git.exe`, `firebase`는 `%APPDATA%\npm\firebase.cmd`에 설치되어 있습니다. 설치 전에 열린 셸에서는 PATH에 잡히지 않으므로 전체 경로로 실행하세요.
 - 샌드박스 셸에서는 Firebase 로그인 정보와 전역 npm 설치가 보이지 않습니다. `npm`, `firebase`, `git push`는 샌드박스 밖에서 실행해야 합니다. 특히 `npm run build`는 Firestore에서 게임 목록을 받아 오므로, 네트워크가 막힌 곳에서 돌리면 경고만 남기고 게임 페이지·게임 목록이 빠진 결과물이 나옵니다. 배포 전 빌드 로그에 `게임 N개를 ... 만들어요`가 찍히는지 확인하세요.
 - 저장소 루트의 `murder_mystery_games.csv`는 사용자가 따로 둔 추적되지 않는 파일입니다. 커밋에 넣지 마세요(`git add -A` 대신 파일을 지정해서 추가).
+- `ffmpeg`는 설치되어 있지 않습니다. 영상 확인은 `promo`에서 `npx remotion ffprobe` / `npx remotion ffmpeg`로 하세요. 헤드리스 브라우저가 필요하면 Edge(`C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe`)를 `puppeteer-core`로 띄우면 됩니다.
+- 게임 표지(`img.boardlife.co.kr`)는 다른 사이트에서 불러오는 것을 막아서 localhost나 헤드리스 캡처에서는 이미지가 깨집니다. Node `fetch`로는 정상으로 받아지므로, 캡처할 때는 요청을 가로채 Node에서 받은 이미지로 대신 응답합니다(`promo/capture.mjs` 참고).
+- Remotion 렌더링과 `promo` 캡처도 네트워크(Chrome Headless Shell 다운로드, 표지 이미지)가 필요하므로 샌드박스 밖에서 실행하세요.
+- `python`은 Windows 스토어 연결만 있어 실행되지 않습니다(종료 코드 49). 여러 군데를 한 번에 고치는 스크립트는 `node`로 작성하세요.
+- Java가 없어 Firestore 에뮬레이터를 쓸 수 없습니다. 규칙 문법은 `firebase deploy --only firestore:rules --dry-run`(샌드박스 밖)으로 컴파일만 확인합니다. 규칙에 검증을 추가하기 전에는 공개 REST(`https://firestore.googleapis.com/v1/projects/mahamuder/databases/(default)/documents/games?pageSize=300`)를 Node `fetch`로 읽어 기존 문서가 조건을 통과하는지 확인하세요.
+- 파일 전체를 셸로 다시 쓰면 Vite 개발 서버가 쓰는 도중의 빈 파일을 캐시할 수 있습니다. 콘솔에 `does not provide an export named` 오류가 뜨면 `dev-demo` 미리 보기를 껐다 켜세요.
+- 데모 모드를 브라우저 패널에서 테스트할 때는 `prompt()`/`confirm()` 창이 자동화를 멈춥니다. 먼저 JS로 `window.prompt = () => "탐정"; window.confirm = () => true`를 넣은 뒤 버튼을 누르세요.
 
 ## 아키텍처
 
@@ -47,9 +57,11 @@ firebase deploy --only firestore   # firestore.rules / firestore.indexes.json �
 
 **주의할 점**: `main.tsx`는 `StrictMode`로 렌더링하므로 개발 모드에서 effect가 두 번 실행됩니다. `useEffect` 콜백은 아무것도 반환하지 않거나 정리(cleanup) 함수만 반환해야 합니다. `useEffect(() => window.scrollTo(0, 0))`처럼 화살표 함수가 다른 값을 반환하면 화면 전체가 하얗게 됩니다. 구독 effect는 `store.watch*`가 돌려주는 해제 함수를 그대로 반환하면 됩니다.
 
+**회원 제한**: 로그인만으로는 아무것도 읽거나 쓸 수 없고, `users/{uid}` 문서가 있는 회원만 됩니다(규칙의 `member()`). `users` 문서는 처음 만들 때 `inviteCode`가 `config/invite.code`(Firebase 콘솔에서 관리, 회원만 읽기 가능)와 같아야 합니다. 초대 링크는 `/join/<code>`(`pages/join/JoinPage.tsx`, 마이페이지의 "친구 초대 링크 복사")이고, 로그인 중에는 코드를 localStorage `mm_invite`에 기억해 둡니다. `useApp()`의 `user`는 회원만이고, 로그인했지만 회원이 아닌 사람은 `outsider`에 들어갑니다(`requireLogin`·`LoginRequired`가 초대 안내를 보여 줌). 데모 모드에서는 로그인하면 회원이고, `mm_me`에 `member: false`를 넣으면 비회원 화면을, 초대 코드 `demo`로 가입 흐름을 확인할 수 있습니다.
+
 **Firestore 데이터 모델** (`src/types.ts`, 권한은 `firestore.rules`가 강제함):
-- `games/{id}`: 누구나 읽을 수 있고, 로그인한 사용자는 누구나 쓸 수 있습니다. `localized`(정발 여부, 값이 없으면 정발됨)와 `rentals.{ownerUid}: {uid, name, date}`(그 사람이 가진 게임을 누가 빌려 갔는지)가 들어갑니다. 보유 여부는 게임이 아니라 각자의 `users/{uid}.owned`에 있고, 같은 게임을 여러 명이 가지고 있으면 한 벌씩 따로 빌립니다(`useGameHelpers().copiesOf`). 대여·반납은 `store.rentGame`/`returnGame`으로 하고, 모아 보는 화면은 `/library`(`pages/library/LibraryPage.tsx`)입니다.
+- `games/{id}`: 누구나 읽을 수 있고, 회원은 누구나 추가·수정할 수 있습니다. 규칙이 필드 이름·타입·길이를 검사하고(`link`·`imageUrl`은 비었거나 http(s)만, 화면에서도 `safeUrl`), 새 게임에는 `createdBy`가 반드시 있어야 합니다. 정보 수정과 대여(`rentals`, 한 번에 한 벌)는 서로 다른 쓰기로 나뉘므로 필드를 추가하면 규칙의 `editableFields()`도 고치세요. 삭제는 등록한 사람(`createdBy`, 값이 없는 예전 게임은 누구나)만 할 수 있고, 플레이 기록·보유자·모집 공지가 걸린 게임은 화면에서 삭제를 막습니다(이 부분은 규칙이 아니라 `GameDetail`에서만 검사). `localized`(정발 여부, 값이 없으면 정발됨)와 `rentals.{ownerUid}: {uid, name, date}`(그 사람이 가진 게임을 누가 빌려 갔는지)가 들어갑니다. 보유 여부는 게임이 아니라 각자의 `users/{uid}.owned`에 있고, 같은 게임을 여러 명이 가지고 있으면 한 벌씩 따로 빌립니다(`useGameHelpers().copiesOf`). 대여·반납은 `store.rentGame`/`returnGame`으로 하고, 모아 보는 화면은 `/library`(`pages/library/LibraryPage.tsx`)입니다.
 - `users/{uid}`: `played.{gameId}: {rating, date}`, `liked.{gameId}: true`, `owned.{gameId}: true`, `nickname`, `bio`, `prefGenres`, `prefLength`가 들어갑니다. 본인 문서만 쓸 수 있습니다. 중첩 필드는 `setProfileField(uid, "played.<id>", value)`처럼 점 경로로 갱신하며, `value === null`이면 필드를 삭제합니다.
 - `guests/{id}`: 가입하지 않은 친구입니다. `name`, `owned.{gameId}: true`, `createdBy`가 들어가고, 로그인한 사용자는 누구나 읽고 쓸 수 있습니다. 게임 보유자로만 쓰이며 `rentals`의 키로 guest id가 들어갑니다. 보유자는 프로필과 guest를 합친 `Owner` 형태로 다룹니다(`useGameHelpers().ownersOf`).
-- `events/{id}`: `hostUid`, `gameId`, `date`(`YYYY-MM-DD` 문자열), `participants.{uid}: name`이 들어갑니다. 주최자는 모든 필드를 수정할 수 있고, 다른 사람은 `participants`에서 자기 uid만 추가하거나 삭제할 수 있습니다. 클라이언트 쓰기 형태를 바꾸면 규칙도 함께 확인하세요.
+- `events/{id}`: `hostUid`, `gameId`, `date`(`YYYY-MM-DD` 문자열), `participants.{uid}: name`이 들어갑니다. 주최자는 모든 필드를 수정할 수 있고, 다른 사람은 `participants`에서 자기 uid만 추가하거나 삭제할 수 있습니다. 클라이언트 쓰기 형태를 바꾸면 규칙도 함께 확인하세요. 공유 링크 `/schedule/<id>`는 일정 모달을 띄우고(`SchedulePage`, 지워진 일정 판별에 `eventsReady` 사용), 지난 모임의 "다녀왔어요"는 각자 자기 `played.<gameId>`에 모임 날짜로 기록합니다(규칙상 남의 기록은 못 씀).
 - 표시 이름 우선순위는 `nickname`, 그다음 `googleName`입니다(`lib/format.ts`의 `displayName`).

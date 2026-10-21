@@ -211,6 +211,22 @@ export function MyPage() {
 
   const openDetail = (id: string) => openModal(<GameDetail gameId={id} />);
   const setField = (path: string, value: unknown) => store.setProfileField(user.uid, path, value).catch(showError);
+  // 회원만 초대 코드를 읽을 수 있다 (config/invite, 관리자가 Firebase 콘솔에서 만듦)
+  const copyInvite = async () => {
+    try {
+      const code = await store.getInviteCode();
+      if (!code) return toast("초대 코드가 아직 설정되지 않았어요. 관리자에게 알려 주세요");
+      const url = `${location.origin}/join/${encodeURIComponent(code)}`;
+      try {
+        await navigator.clipboard.writeText(url);
+        toast("초대 링크를 복사했어요. 같이 할 친구에게만 보내 주세요");
+      } catch {
+        prompt("아래 링크를 복사해 보내 주세요", url);
+      }
+    } catch (err) {
+      showError(err);
+    }
+  };
 
   const playedIds = Object.keys(me.played || {}).filter((id) => games.some((g) => g.id === id));
   const likedIds = Object.keys(me.liked || {}).filter((id) => games.some((g) => g.id === id));
@@ -327,7 +343,12 @@ export function MyPage() {
       </section>
 
       <section className="card">
-        <h2 className="section-title">친구들의 기록</h2>
+        <div className="section-head">
+          <h2 className="section-title">친구들의 기록</h2>
+          <button className="btn btn-sm" onClick={copyInvite}>
+            🔗 친구 초대 링크 복사
+          </button>
+        </div>
         <Friends />
       </section>
     </div>
