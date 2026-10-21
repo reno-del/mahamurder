@@ -3,3 +3,6 @@ node_modules/
 dist/
 *.log
 *.tsbuildinfo
+.agents/
+.claude/skills/
+skills-lock.json
