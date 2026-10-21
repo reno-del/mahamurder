@@ -1,0 +1,437 @@
+<title>머더미스터리 클럽 사건 파일</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@700;800&family=Noto+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: 사건 파일처럼 단일 컬럼. 화면마다 스크린샷 위에 번호 핀, 옆(좁으면 아래)에 핀 설명. 사이트와 같은 어두운 톤 한 가지로만 그림 */
+:root {
+  color-scheme: dark;
+  --bg: #121010;
+  --panel: #1c1817;
+  --panel-2: #241f1d;
+  --line: #3a3230;
+  --ink: #f2ebe6;
+  --muted: #a89c95;
+  --blood: #d8404f;
+  --blood-soft: #3a1c20;
+  --ok: #4fae7f;
+  --ok-soft: #1c3328;
+  --amber: #e2a24a;
+  --display: "Nanum Myeongjo", "Batang", serif;
+  --body: "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.65; word-break: keep-all; }
+.wrap { max-width: 1120px; margin: 0 auto; padding-block: 56px 96px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+h1, h2, h3 { text-wrap: balance; margin: 0; }
+.label { font-family: var(--mono); font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--blood); }
+
+/* hero */
+.hero { display: grid; gap: 28px; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); align-items: center; }
+.hero h1 { font-family: var(--display); font-weight: 800; font-size: clamp(34px, 6vw, 60px); line-height: 1.15; margin-top: 10px; }
+.hero p { color: var(--muted); font-size: 17px; max-width: 34em; margin: 16px 0 0; }
+.stamp { display: inline-block; margin-top: 20px; border: 2px solid var(--blood); color: var(--blood); font-family: var(--mono); font-size: 12px; letter-spacing: 0.16em; padding: 6px 12px; transform: rotate(-3deg); }
+.map { width: 100%; height: auto; display: block; }
+.map text { font-family: var(--body); }
+
+/* toc */
+.toc { display: flex; flex-wrap: wrap; gap: 8px; margin: 40px 0 0; padding: 0; list-style: none; }
+.toc a { display: block; color: var(--ink); text-decoration: none; border: 1px solid var(--line); padding: 7px 14px; border-radius: 999px; font-size: 14px; }
+.toc a:hover, .toc a:focus-visible { border-color: var(--blood); color: var(--blood); outline: none; }
+
+section { margin-top: 96px; scroll-margin-top: 24px; }
+.sec-head { display: grid; gap: 6px; margin-bottom: 24px; }
+.sec-head h2 { font-family: var(--display); font-weight: 800; font-size: clamp(26px, 4vw, 36px); }
+.sec-head p { color: var(--muted); margin: 0; max-width: 46em; }
+.route { font-family: var(--mono); font-size: 13px; color: var(--muted); }
+
+/* journey */
+.journey { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 0; counter-reset: step; }
+.step { position: relative; padding: 0 10px 0 0; }
+.step::before { counter-increment: step; content: counter(step); display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: var(--blood); color: #fff; font-family: var(--mono); font-size: 15px; position: relative; z-index: 1; }
+.step::after { content: ""; position: absolute; top: 17px; left: 36px; right: 0; height: 2px; background: repeating-linear-gradient(90deg, var(--line) 0 6px, transparent 6px 12px); }
+.step:last-child::after { display: none; }
+.step h3 { font-size: 16px; margin-top: 14px; }
+.step p { margin: 6px 0 0; color: var(--muted); font-size: 13.5px; }
+.step .where { display: inline-block; margin-top: 8px; font-family: var(--mono); font-size: 11.5px; color: var(--ink); background: var(--panel-2); border-radius: 4px; padding: 2px 7px; }
+
+/* annotated screens */
+.screen { display: grid; grid-template-columns: minmax(0, 1.75fr) minmax(0, 1fr); gap: 28px; align-items: start; }
+.frame { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; box-shadow: 0 30px 60px -30px #000; }
+.frame-bar { display: flex; align-items: center; gap: 6px; padding: 9px 12px; border-bottom: 1px solid var(--line); }
+.frame-bar i { width: 10px; height: 10px; border-radius: 50%; background: var(--line); }
+.frame-bar span { margin-left: 10px; font-family: var(--mono); font-size: 12px; color: var(--muted); background: var(--bg); padding: 2px 10px; border-radius: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.shot { position: relative; }
+.shot img { display: block; width: 100%; height: auto; max-width: 100%; }
+.pin { position: absolute; transform: translate(-50%, -50%); width: 28px; height: 28px; border-radius: 50%; background: var(--blood); color: #fff; border: 2px solid #fff; font-family: var(--mono); font-size: 13px; display: grid; place-items: center; box-shadow: 0 0 0 4px rgba(216, 64, 79, 0.35); transition: transform 0.15s; }
+.pin.on { transform: translate(-50%, -50%) scale(1.35); box-shadow: 0 0 0 8px rgba(216, 64, 79, 0.45); }
+.notes { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; counter-reset: note; }
+.notes li { counter-increment: note; display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 12px; padding: 10px 12px; border-radius: 8px; cursor: default; }
+.notes li::before { content: counter(note); width: 26px; height: 26px; border-radius: 50%; border: 1.5px solid var(--blood); color: var(--blood); font-family: var(--mono); font-size: 12.5px; display: grid; place-items: center; }
+.notes li.on, .notes li:hover { background: var(--panel-2); }
+.notes b { display: block; font-size: 15px; }
+.notes span { color: var(--muted); font-size: 13.5px; }
+
+/* diagrams */
+.diagram-box { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 24px; overflow-x: auto; }
+.diagram-box svg { display: block; width: 100%; min-width: 640px; height: auto; }
+.diagram-box svg text { font-family: var(--body); }
+.two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; margin-top: 20px; }
+.fact { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; }
+.fact h3 { font-size: 16px; }
+.fact p { margin: 6px 0 0; color: var(--muted); font-size: 14px; }
+.fact code { font-family: var(--mono); font-size: 12.5px; color: var(--ink); background: var(--panel-2); padding: 1px 6px; border-radius: 4px; }
+
+/* permission matrix */
+.matrix-wrap { overflow-x: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; }
+.matrix { width: 100%; min-width: 620px; border-collapse: collapse; font-size: 14px; }
+.matrix th, .matrix td { padding: 13px 16px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: middle; }
+.matrix thead th { font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.1em; color: var(--muted); font-weight: 500; text-transform: uppercase; }
+.matrix tr:last-child td { border-bottom: 0; }
+.cell { display: inline-flex; align-items: center; gap: 8px; }
+.dot { width: 12px; height: 12px; border-radius: 50%; flex: none; }
+.dot.yes { background: var(--ok); }
+.dot.part { background: linear-gradient(90deg, var(--amber) 50%, transparent 50%); border: 1.5px solid var(--amber); }
+.dot.no { border: 1.5px solid var(--line); }
+.legend { display: flex; flex-wrap: wrap; gap: 18px; margin-top: 12px; color: var(--muted); font-size: 13px; }
+
+footer { margin-top: 96px; padding-top: 18px; border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; }
+footer a { color: var(--ink); }
+
+@media (max-width: 860px) {
+  .hero, .screen, .two { grid-template-columns: minmax(0, 1fr); }
+  .journey { grid-template-columns: minmax(0, 1fr); gap: 18px; }
+  .step { padding: 0 0 0 52px; min-height: 36px; }
+  .step::before { position: absolute; left: 0; top: 0; }
+  .step::after { top: 40px; bottom: -18px; left: 17px; right: auto; width: 2px; height: auto; background: repeating-linear-gradient(180deg, var(--line) 0 6px, transparent 6px 12px); }
+  .step h3 { margin-top: 6px; }
+  .pin { width: 20px; height: 20px; font-size: 10.5px; border-width: 1.5px; }
+}
+@media (prefers-reduced-motion: reduce) { .pin { transition: none; } }
+</style>
+
+<div class="wrap">
+  <header class="hero">
+    <div>
+      <div class="label">Case file · mahamuder.web.app</div>
+      <h1>머더미스터리 클럽<br>사건 파일</h1>
+      <p>친구들끼리 해 본 게임과 하고 싶은 게임을 모으고, 모임을 잡고, 서로의 게임을 빌려 주는 초대제 사이트예요. 화면마다 무엇을 할 수 있는지 번호를 붙여 정리했어요.</p>
+      <div class="stamp">초대받은 회원 전용 · 스포일러 금지</div>
+    </div>
+    <svg class="map" viewBox="0 0 460 340" role="img" aria-label="사이트 구성도: 초대 링크로 회원이 되고, 게임 소개·일정 모집·보유 게임·마이페이지가 서로 연결됨">
+      <defs>
+        <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#a89c95"/></marker>
+      </defs>
+      <g stroke="#a89c95" stroke-width="1.5" fill="none" stroke-dasharray="5 5">
+        <path d="M230 64 L230 118" marker-end="url(#ar)"/>
+        <path d="M195 150 L110 214" marker-end="url(#ar)"/>
+        <path d="M265 150 L350 214" marker-end="url(#ar)"/>
+        <path d="M230 168 L230 260" marker-end="url(#ar)"/>
+        <path d="M150 236 L300 236" marker-end="url(#ar)"/>
+      </g>
+      <rect x="150" y="20" width="160" height="44" rx="22" fill="#3a1c20" stroke="#d8404f" stroke-width="1.5"/>
+      <text x="230" y="47" text-anchor="middle" fill="#f2ebe6" font-size="14" font-weight="700">🔐 초대 링크로 가입</text>
+      <rect x="160" y="118" width="140" height="50" rx="10" fill="#d8404f"/>
+      <text x="230" y="140" text-anchor="middle" fill="#fff" font-size="15" font-weight="700">📚 게임 소개</text>
+      <text x="230" y="158" text-anchor="middle" fill="#fff" font-size="11" opacity="0.85">누구나 볼 수 있음</text>
+      <rect x="20" y="214" width="130" height="46" rx="10" fill="#241f1d" stroke="#3a3230"/>
+      <text x="85" y="242" text-anchor="middle" fill="#f2ebe6" font-size="14" font-weight="700">📅 일정 모집</text>
+      <rect x="300" y="214" width="140" height="46" rx="10" fill="#241f1d" stroke="#3a3230"/>
+      <text x="370" y="242" text-anchor="middle" fill="#f2ebe6" font-size="14" font-weight="700">📦 보유·대여</text>
+      <rect x="160" y="260" width="140" height="46" rx="10" fill="#241f1d" stroke="#3a3230"/>
+      <text x="230" y="288" text-anchor="middle" fill="#f2ebe6" font-size="14" font-weight="700">🕵️ 마이페이지</text>
+      <text x="225" y="228" text-anchor="middle" fill="#a89c95" font-size="11">다녀온 모임 → 기록</text>
+    </svg>
+  </header>
+
+  <ul class="toc">
+    <li><a href="#journey">모임 한 번의 흐름</a></li>
+    <li><a href="#games">게임 소개</a></li>
+    <li><a href="#detail">게임 상세</a></li>
+    <li><a href="#schedule">일정 모집</a></li>
+    <li><a href="#library">보유 게임·대여</a></li>
+    <li><a href="#mypage">마이페이지</a></li>
+    <li><a href="#invite">초대와 가입</a></li>
+    <li><a href="#perm">권한</a></li>
+  </ul>
+
+  <section id="journey">
+    <div class="sec-head">
+      <div class="label">Walkthrough</div>
+      <h2>모임 한 번이 흘러가는 길</h2>
+      <p>게임을 고르는 데서 시작해, 다녀온 뒤 기록이 다음 추천으로 이어져요.</p>
+    </div>
+    <div class="journey">
+      <div class="step"><h3>게임 찾기</h3><p>장르·인원·정발 여부로 거르고 친구 평점을 봐요.</p><span class="where">/games</span></div>
+      <div class="step"><h3>모집 공지</h3><p>상세 화면이나 달력에서 날짜·장소·인원을 정해 올려요.</p><span class="where">/schedule</span></div>
+      <div class="step"><h3>링크 공유</h3><p>공지 링크를 카톡방에 붙이면 그 공지가 바로 열려요.</p><span class="where">/schedule/&lt;id&gt;</span></div>
+      <div class="step"><h3>참여 신청</h3><p>이미 해 본 게임이면 스포일러 경고가 한 번 더 떠요.</p><span class="where">참여하기</span></div>
+      <div class="step"><h3>게임 빌리기</h3><p>게임이 없으면 가진 친구에게 한 벌 빌려요.</p><span class="where">/library</span></div>
+      <div class="step"><h3>다녀와서 기록</h3><p>“플레이 했어요”로 모임 날짜와 별점을 남기면 추천이 바뀌어요.</p><span class="where">/mypage</span></div>
+    </div>
+  </section>
+
+  <section id="games">
+    <div class="sec-head">
+      <div class="label">Screen 01</div>
+      <h2>게임 소개</h2>
+      <p class="route">/games</p>
+      <p>우리끼리 해 본 게임과 하고 싶은 게임 모음이에요. 로그인하지 않아도 볼 수 있어요.</p>
+    </div>
+    <div class="screen" data-screen>
+      <div class="frame">
+        <div class="frame-bar"><i></i><i></i><i></i><span>mahamuder.web.app/games</span></div>
+        <div class="shot">
+          <img src="shots/games.png" alt="게임 소개 화면: 모집 중인 일정 배너, 검색과 필터, 게임 카드 목록" width="1920" height="1080">
+          <span class="pin" style="left:7%;top:36.4%">1</span>
+          <span class="pin" style="left:5.4%;top:51%">2</span>
+          <span class="pin" style="left:94.5%;top:46%">3</span>
+          <span class="pin" style="left:14.5%;top:79%">4</span>
+          <span class="pin" style="left:7%;top:93%">5</span>
+        </div>
+      </div>
+      <ol class="notes">
+        <li><div><b>모집 중인 일정</b><span>다가오는 모임이 맨 위에 떠요. 누르면 공지로 이동해요.</span></div></li>
+        <li><div><b>검색·필터·정렬</b><span>이름·장르·제작사 검색, 장르·인원·구비·정발 필터, 평점순·최신순·가격순·친구 플레이순.</span></div></li>
+        <li><div><b>게임 추가</b><span>회원은 누구나 새 게임을 등록할 수 있어요.</span></div></li>
+        <li><div><b>내 상태 배지</b><span>내 게임·플레이함·구비 수가 표지 위에 붙어요.</span></div></li>
+        <li><div><b>외부 평가와 친구 평균</b><span>별점 옆에 친구들이 매긴 평균이 함께 보여요.</span></div></li>
+      </ol>
+    </div>
+  </section>
+
+  <section id="detail">
+    <div class="sec-head">
+      <div class="label">Screen 02</div>
+      <h2>게임 상세</h2>
+      <p class="route">/games/&lt;id&gt;</p>
+      <p>게임마다 주소가 있어서, 링크를 보내면 이 창이 바로 열려요.</p>
+    </div>
+    <div class="screen" data-screen>
+      <div class="frame">
+        <div class="frame-bar"><i></i><i></i><i></i><span>mahamuder.web.app/games/…</span></div>
+        <div class="shot">
+          <img src="shots/detail.png" alt="게임 상세 창: 평점, 보유 현황, 플레이·선호·보유 버튼, 모집하기, 친구 기록" width="1920" height="1080">
+          <span class="pin" style="left:42.6%;top:28%">1</span>
+          <span class="pin" style="left:42.6%;top:43.6%">2</span>
+          <span class="pin" style="left:24.5%;top:54%">3</span>
+          <span class="pin" style="left:57%;top:49%">4</span>
+          <span class="pin" style="left:24.5%;top:61%">5</span>
+          <span class="pin" style="left:24.5%;top:67.3%">6</span>
+          <span class="pin" style="left:24.5%;top:76%">7</span>
+          <span class="pin" style="left:62.2%;top:84.7%">8</span>
+        </div>
+      </div>
+      <ol class="notes">
+        <li><div><b>외부 평가 · 친구 평균</b><span>몇 명이 해 봤는지까지 함께 보여요.</span></div></li>
+        <li><div><b>구비 현황</b><span>클럽 안에서 몇 명이 가지고 있는지.</span></div></li>
+        <li><div><b>플레이함 · 하고 싶어요 · 보유</b><span>한 번 눌러 내 기록에 남겨요.</span></div></li>
+        <li><div><b>이 게임으로 모집하기</b><span>바로 모집 공지 작성으로 넘어가요.</span></div></li>
+        <li><div><b>대여 상태</b><span>내 게임인지, 지금 빌릴 수 있는지, 누가 빌려 갔는지.</span></div></li>
+        <li><div><b>내 평점</b><span>별 다섯 개로 매겨요.</span></div></li>
+        <li><div><b>이 게임을 해 본 친구</b><span>누가 해 봤고 몇 점을 줬는지. 같이 할 사람을 고를 때 참고해요.</span></div></li>
+        <li><div><b>정보 수정 · 삭제</b><span>수정은 회원 누구나, 삭제는 등록한 사람만. 기록이나 공지가 걸린 게임은 지울 수 없어요.</span></div></li>
+      </ol>
+    </div>
+  </section>
+
+  <section id="schedule">
+    <div class="sec-head">
+      <div class="label">Screen 03</div>
+      <h2>일정 모집</h2>
+      <p class="route">/schedule · /schedule/&lt;id&gt;</p>
+      <p>달력에서 날짜를 눌러 “이 날 이 게임 할 사람!” 공지를 올려요.</p>
+    </div>
+    <div class="screen" data-screen>
+      <div class="frame">
+        <div class="frame-bar"><i></i><i></i><i></i><span>mahamuder.web.app/schedule</span></div>
+        <div class="shot">
+          <img src="shots/schedule.png" alt="일정 모집 화면: 모집 공지 카드 세 장과 달력" width="1920" height="1080">
+          <span class="pin" style="left:6%;top:36.8%">1</span>
+          <span class="pin" style="left:51.3%;top:36.6%">2</span>
+          <span class="pin" style="left:6%;top:57.4%">3</span>
+          <span class="pin" style="left:6%;top:68%">4</span>
+          <span class="pin" style="left:66%;top:69.8%">5</span>
+          <span class="pin" style="left:6%;top:86.6%">6</span>
+          <span class="pin" style="left:80.4%;top:17.6%">7</span>
+        </div>
+      </div>
+      <ol class="notes">
+        <li><div><b>D-day</b><span>모임까지 며칠 남았는지.</span></div></li>
+        <li><div><b>모집 상태</b><span>“1명 더 필요”, 최소 인원을 넘으면 “진행 확정 · 추가 모집”, 꽉 차면 “모집 완료”.</span></div></li>
+        <li><div><b>인원 막대</b><span>현재 인원 / 최소~최대 인원과 참가자 목록. 왕관은 주최자예요.</span></div></li>
+        <li><div><b>스포일러 경고</b><span>이미 이 게임을 해 본 참가자를 알려 줘요.</span></div></li>
+        <li><div><b>참여하기 · 참여 취소</b><span>누구나 자기 자신만 넣고 뺄 수 있어요. 주최자는 수정·삭제.</span></div></li>
+        <li><div><b>달력</b><span>날짜를 눌러 공지를 올려요. 지난 날짜에는 올릴 수 없어요.</span></div></li>
+        <li><div><b>모집 공지 올리기</b><span>게임·날짜·장소·인원·메모(준비물, 회비 등).</span></div></li>
+      </ol>
+    </div>
+  </section>
+
+  <section id="library">
+    <div class="sec-head">
+      <div class="label">Screen 04</div>
+      <h2>보유 게임과 대여</h2>
+      <p class="route">/library</p>
+      <p>누가 어떤 게임을 가졌고 지금 누가 빌려 갔는지 한눈에 봐요.</p>
+    </div>
+    <div class="screen" data-screen>
+      <div class="frame">
+        <div class="frame-bar"><i></i><i></i><i></i><span>mahamuder.web.app/library</span></div>
+        <div class="shot">
+          <img src="shots/library.png" alt="보유 게임 화면: 요약 숫자, 대여 중 목록, 친구별 보유 목록" width="1920" height="1080">
+          <span class="pin" style="left:10.5%;top:32.4%">1</span>
+          <span class="pin" style="left:6%;top:50.6%">2</span>
+          <span class="pin" style="left:83%;top:65.7%">3</span>
+          <span class="pin" style="left:52.6%;top:84%">4</span>
+          <span class="pin" style="left:80.5%;top:79%">5</span>
+          <span class="pin" style="left:6%;top:89%">6</span>
+        </div>
+      </div>
+      <ol class="notes">
+        <li><div><b>요약</b><span>보유 게임 · 대여 가능 · 대여 중 · 내가 빌린 게임 수.</span></div></li>
+        <li><div><b>대여 중 목록</b><span>게임, 주인, 빌린 사람, 대여일과 며칠째인지.</span></div></li>
+        <li><div><b>반납하기 · 돌려받음</b><span>빌린 사람은 반납, 주인은 돌려받음으로 정리해요.</span></div></li>
+        <li><div><b>내 보유 게임 추가</b><span>검색해서 가진 게임을 빠르게 골라요.</span></div></li>
+        <li><div><b>미등록 친구 추가</b><span>가입하지 않은 친구의 게임도 등록해 빌릴 수 있게 해요.</span></div></li>
+        <li><div><b>친구별 보기</b><span>사람마다 몇 개를 가졌는지 눌러서 걸러 봐요.</span></div></li>
+      </ol>
+    </div>
+    <div class="diagram-box" style="margin-top:24px">
+      <svg viewBox="0 0 900 170" role="img" aria-label="대여 흐름: 보유 등록 후 대여 가능, 빌리면 대여 중, 반납하면 다시 대여 가능">
+        <defs><marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#a89c95"/></marker></defs>
+        <rect x="20" y="55" width="190" height="60" rx="12" fill="#241f1d" stroke="#3a3230"/>
+        <text x="115" y="82" text-anchor="middle" fill="#f2ebe6" font-size="15" font-weight="700">📦 보유 등록</text>
+        <text x="115" y="102" text-anchor="middle" fill="#a89c95" font-size="12">회원 또는 미등록 친구</text>
+        <rect x="350" y="55" width="190" height="60" rx="12" fill="#1c3328" stroke="#4fae7f"/>
+        <text x="445" y="82" text-anchor="middle" fill="#f2ebe6" font-size="15" font-weight="700">대여 가능</text>
+        <text x="445" y="102" text-anchor="middle" fill="#a89c95" font-size="12">한 사람당 한 벌씩</text>
+        <rect x="690" y="55" width="190" height="60" rx="12" fill="#3a1c20" stroke="#d8404f"/>
+        <text x="785" y="82" text-anchor="middle" fill="#f2ebe6" font-size="15" font-weight="700">대여 중</text>
+        <text x="785" y="102" text-anchor="middle" fill="#a89c95" font-size="12">빌린 사람 · 대여일 기록</text>
+        <path d="M210 85 L345 85" stroke="#a89c95" stroke-width="1.5" marker-end="url(#ar2)"/>
+        <path d="M540 72 Q615 30 686 72" stroke="#a89c95" stroke-width="1.5" fill="none" marker-end="url(#ar2)"/>
+        <text x="613" y="38" text-anchor="middle" fill="#f2ebe6" font-size="13">빌리기</text>
+        <path d="M686 100 Q615 142 544 100" stroke="#a89c95" stroke-width="1.5" fill="none" marker-end="url(#ar2)"/>
+        <text x="615" y="150" text-anchor="middle" fill="#f2ebe6" font-size="13">반납하기 / 돌려받음</text>
+      </svg>
+    </div>
+  </section>
+
+  <section id="mypage">
+    <div class="sec-head">
+      <div class="label">Screen 05</div>
+      <h2>마이페이지 · 탐정 수첩</h2>
+      <p class="route">/mypage</p>
+      <p>내 기록과 취향을 모아 두면, 아직 안 해 본 게임을 골라 추천해 줘요.</p>
+    </div>
+    <div class="screen" data-screen>
+      <div class="frame">
+        <div class="frame-bar"><i></i><i></i><i></i><span>mahamuder.web.app/mypage</span></div>
+        <div class="shot">
+          <img src="shots/mypage.png" alt="마이페이지: 프로필, 기록 숫자, 선호 장르와 플레이 시간, 추천 게임" width="1920" height="1080">
+          <span class="pin" style="left:13.8%;top:16.4%">1</span>
+          <span class="pin" style="left:10.5%;top:31.5%">2</span>
+          <span class="pin" style="left:6%;top:42%">3</span>
+          <span class="pin" style="left:6%;top:59.7%">4</span>
+          <span class="pin" style="left:6%;top:71.3%">5</span>
+          <span class="pin" style="left:4.5%;top:83.7%">6</span>
+          <span class="pin" style="left:38.6%;top:16.4%">7</span>
+        </div>
+      </div>
+      <ol class="notes">
+        <li><div><b>닉네임</b><span>사이트 전체에서 Google 이름 대신 보여요.</span></div></li>
+        <li><div><b>내 기록 요약</b><span>플레이한 게임 수, 선호 게임, 평균 평점, 참여 예정 모임.</span></div></li>
+        <li><div><b>참여 예정 모임</b><span>눌러서 바로 공지로 가요.</span></div></li>
+        <li><div><b>선호하는 장르</b><span>추천에 반영돼요.</span></div></li>
+        <li><div><b>선호하는 플레이 시간</b><span>~2시간 · 2~4시간 · 4시간 이상 · 상관없음.</span></div></li>
+        <li><div><b>아직 안 해 본 추천 게임</b><span>취향에 맞고 내가 안 해 본 게임만 골라 보여요.</span></div></li>
+        <li><div><b>한마디</b><span>친구들에게 보이는 소개 한 줄.</span></div></li>
+      </ol>
+    </div>
+  </section>
+
+  <section id="invite">
+    <div class="sec-head">
+      <div class="label">Access</div>
+      <h2>초대와 가입</h2>
+      <p class="route">/join/&lt;코드&gt;</p>
+      <p>Google 로그인만으로는 아무것도 볼 수 없어요. 회원이 보낸 초대 링크로 들어와야 클럽에 들어올 수 있어요.</p>
+    </div>
+    <div class="diagram-box">
+      <svg viewBox="0 0 900 230" role="img" aria-label="가입 흐름: 초대 링크, Google 로그인, 초대 수락, 회원. 초대 없이 로그인하면 안내 화면">
+        <defs><marker id="ar3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#a89c95"/></marker></defs>
+        <g font-size="14" font-weight="700" fill="#f2ebe6" text-anchor="middle">
+          <rect x="10" y="40" width="170" height="56" rx="12" fill="#241f1d" stroke="#3a3230"/>
+          <text x="95" y="66">회원이 보낸</text><text x="95" y="85">초대 링크</text>
+          <rect x="245" y="40" width="170" height="56" rx="12" fill="#241f1d" stroke="#3a3230"/>
+          <text x="330" y="74">Google 로그인</text>
+          <rect x="480" y="40" width="170" height="56" rx="12" fill="#241f1d" stroke="#3a3230"/>
+          <text x="565" y="74">초대 수락하기</text>
+          <rect x="715" y="40" width="170" height="56" rx="12" fill="#1c3328" stroke="#4fae7f"/>
+          <text x="800" y="74">🕵️ 회원</text>
+          <rect x="245" y="150" width="170" height="56" rx="12" fill="#3a1c20" stroke="#d8404f"/>
+          <text x="330" y="176">초대 없이 로그인</text><text x="330" y="195" font-weight="400" font-size="12" fill="#a89c95">게임 소개만 볼 수 있음</text>
+        </g>
+        <g stroke="#a89c95" stroke-width="1.5" fill="none">
+          <path d="M180 68 L240 68" marker-end="url(#ar3)"/>
+          <path d="M415 68 L475 68" marker-end="url(#ar3)"/>
+          <path d="M650 68 L710 68" marker-end="url(#ar3)"/>
+          <path d="M330 96 L330 145" stroke-dasharray="5 5" marker-end="url(#ar3)"/>
+        </g>
+        <text x="445" y="125" fill="#a89c95" font-size="12">로그인 창을 거쳐도 코드를 기억해 둬요</text>
+      </svg>
+    </div>
+    <div class="two">
+      <div class="fact"><h3>친구 초대하기</h3><p>마이페이지의 <b>친구 초대 링크 복사</b>를 눌러, 같이 할 친구에게만 보내 주세요.</p></div>
+      <div class="fact"><h3>초대 코드 관리</h3><p>Firebase 콘솔의 <code>config/invite</code> 문서 <code>code</code> 필드. 이 값이 없으면 새 친구가 가입할 수 없고, 바꾸면 예전 링크는 더 이상 쓸 수 없어요.</p></div>
+    </div>
+  </section>
+
+  <section id="perm">
+    <div class="sec-head">
+      <div class="label">Rules</div>
+      <h2>누가 무엇을 할 수 있나</h2>
+      <p>화면이 아니라 데이터베이스 규칙이 직접 막아요. 개인 기록은 검색 엔진에도 나가지 않아요.</p>
+    </div>
+    <div class="matrix-wrap">
+      <table class="matrix">
+        <thead><tr><th>기능</th><th>비회원</th><th>회원</th><th>조건</th></tr></thead>
+        <tbody>
+          <tr><td>게임 소개 보기</td><td><span class="cell"><i class="dot yes"></i>가능</span></td><td><span class="cell"><i class="dot yes"></i>가능</span></td><td>검색 노출용</td></tr>
+          <tr><td>게임 추가 · 수정</td><td><span class="cell"><i class="dot no"></i>불가</span></td><td><span class="cell"><i class="dot yes"></i>가능</span></td><td>링크·표지는 http(s) 주소만</td></tr>
+          <tr><td>게임 삭제</td><td><span class="cell"><i class="dot no"></i>불가</span></td><td><span class="cell"><i class="dot part"></i>등록한 사람</span></td><td>기록·보유자·공지가 있으면 불가</td></tr>
+          <tr><td>프로필 · 플레이 기록</td><td><span class="cell"><i class="dot no"></i>불가</span></td><td><span class="cell"><i class="dot part"></i>보기는 전체, 수정은 본인</span></td><td></td></tr>
+          <tr><td>일정 공지</td><td><span class="cell"><i class="dot no"></i>불가</span></td><td><span class="cell"><i class="dot part"></i>주최자는 전체, 그 외는 본인 참여만</span></td><td></td></tr>
+          <tr><td>대여 · 반납</td><td><span class="cell"><i class="dot no"></i>불가</span></td><td><span class="cell"><i class="dot yes"></i>가능</span></td><td>한 번에 한 벌씩</td></tr>
+          <tr><td>미등록 친구 관리</td><td><span class="cell"><i class="dot no"></i>불가</span></td><td><span class="cell"><i class="dot yes"></i>가능</span></td><td>게임 보유자로만 사용</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="legend"><span class="cell"><i class="dot yes"></i>가능</span><span class="cell"><i class="dot part"></i>조건부</span><span class="cell"><i class="dot no"></i>불가</span></div>
+  </section>
+
+  <footer>
+    <span>머더미스터리 클럽 · 2026년 10월 21일 기준 · 화면은 데모 데이터예요</span>
+    <a href="https://mahamuder.web.app">mahamuder.web.app</a>
+  </footer>
+</div>
+
+<script>
+document.querySelectorAll("[data-screen]").forEach(function (screen) {
+  var pins = screen.querySelectorAll(".pin");
+  var notes = screen.querySelectorAll(".notes li");
+  function set(i, on) {
+    if (pins[i]) pins[i].classList.toggle("on", on);
+    if (notes[i]) notes[i].classList.toggle("on", on);
+  }
+  [pins, notes].forEach(function (list) {
+    list.forEach(function (el, i) {
+      el.addEventListener("mouseenter", function () { set(i, true); });
+      el.addEventListener("mouseleave", function () { set(i, false); });
+    });
+  });
+});
+</script>
