@@ -34,7 +34,7 @@ firebase deploy --only firestore   # firestore.rules / firestore.indexes.json �
 - 샌드박스 셸에서는 Firebase 로그인 정보와 전역 npm 설치가 보이지 않습니다. `npm`, `firebase`, `git push`는 샌드박스 밖에서 실행해야 합니다. 특히 `npm run build`는 Firestore에서 게임 목록을 받아 오므로, 네트워크가 막힌 곳에서 돌리면 경고만 남기고 게임 페이지·게임 목록이 빠진 결과물이 나옵니다. 배포 전 빌드 로그에 `게임 N개를 ... 만들어요`가 찍히는지 확인하세요.
 - `gh` CLI는 설치되어 있지 않습니다. GitHub 정보(contributors, 커밋 작성자 계정 등)는 Node `fetch`로 공개 API(`https://api.github.com/repos/reno-del/mahamurder/...`, `User-Agent` 헤더 필요)를 읽으세요.
 - 저장소 루트의 `TqYTP92UPNpa7OaoznNJ4w.mp4`(23MB)도 추적하지 않는 파일입니다. 커밋하지 마세요.
-- 저장소 루트의 `murder_mystery_games.csv`는 사용자가 따로 둔 추적되지 않는 파일입니다. 커밋에 넣지 마세요(`git add -A` 대신 파일을 지정해서 추가).
+- 저장소 루트의 `murder_mystery_games.csv`는 머더미스터리 게임 목록 데이터(보드라이프 기준, 2026-10-21부터 저장소에 포함)입니다. 커밋할 때는 `git add -A` 대신 파일을 지정해서 추가하세요(위 mp4가 섞이지 않게).
 - `ffmpeg`는 설치되어 있지 않습니다. 영상 확인은 `promo`에서 `npx remotion ffprobe` / `npx remotion ffmpeg`로 하세요. 헤드리스 브라우저가 필요하면 Edge(`C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe`)를 `puppeteer-core`로 띄우면 됩니다.
 - 게임 표지(`img.boardlife.co.kr`)는 다른 사이트에서 불러오는 것을 막아서 localhost나 헤드리스 캡처에서는 이미지가 깨집니다. Node `fetch`로는 정상으로 받아지므로, 캡처할 때는 요청을 가로채 Node에서 받은 이미지로 대신 응답합니다(`promo/capture.mjs` 참고).
 - Remotion 렌더링과 `promo` 캡처도 네트워크(Chrome Headless Shell 다운로드, 표지 이미지)가 필요하므로 샌드박스 밖에서 실행하세요.
