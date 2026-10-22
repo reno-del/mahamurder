@@ -9,6 +9,8 @@ from langchain_core.documents import Document
 from langchain_upstage import UpstageEmbeddings
 from supabase import create_client
 
+from rag.filters import GameFilter
+
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 TABLE = "mm_documents"
@@ -38,7 +40,22 @@ def vector_store() -> SupabaseVectorStore:
                                query_name=MATCH_FN, chunk_size=50)
 
 
-def search(store: SupabaseVectorStore, question: str, k: int = TOP_K) -> list[tuple[Document, float]]:
-    """질문과 코사인 유사도가 가장 높은 k개 청크를 (문서, 유사도) 순서로 돌려준다."""
-    hits = store.similarity_search_with_relevance_scores(question, k=k)
+def search(store: SupabaseVectorStore, question: str, k: int = TOP_K,
+           game_filter: GameFilter | None = None) -> list[tuple[Document, float]]:
+    """질문과 코사인 유사도가 가장 높은 k개 청크를 (문서, 유사도) 순서로 돌려준다.
+
+    game_filter가 있으면 그 조건에 맞는 게임만 남긴 뒤 상위 k개를 고른다.
+    """
+    # SupabaseVectorStore의 postgrest_filter는 지금 설치된 supabase 라이브러리와 맞지 않아(.params 없음)
+    # 매칭 함수를 직접 부르고 조건은 Supabase 클라이언트의 filter로 잇는다. 조건은 상위 k개를 자르기 전에 적용된다.
+    params: dict = {"query_embedding": store.embeddings.embed_query(question)}
+    numbers: list[tuple[str, str, str]] = []
+    if game_filter is not None and not game_filter.is_empty():
+        params["filter"] = game_filter.match_filter()
+        numbers = game_filter.number_filters()
+    query = store._client.rpc(MATCH_FN, params)
+    for column, op, value in numbers:
+        query = query.filter(column, op, value)
+    rows = query.limit(k).execute().data
+    hits = [(Document(page_content=r["content"], metadata=r["metadata"]), r["similarity"]) for r in rows]
     return sorted(hits, key=lambda h: h[1], reverse=True)

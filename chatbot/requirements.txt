@@ -6,4 +6,5 @@ langchain-openai==1.7.2
 langchain-upstage==0.7.7
 supabase==2.33.0
 python-dotenv==1.2.4
+streamlit==1.66.1
 requests
