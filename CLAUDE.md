@@ -48,7 +48,7 @@ firebase deploy --only firestore   # firestore.rules / firestore.indexes.json �
 
 ## 아키텍처
 
-**백엔드 교체 구조** (`src/store.ts`): `config.ts`의 `isConfigured`가 참이면 `backend/firebase.ts`를, 거짓이면 `backend/local.ts`(localStorage 데모 모드, `prompt()`로 닉네임 로그인)를 top-level await로 동적 import합니다. 그래서 `vite.config.ts`의 빌드 target은 es2022입니다. `isConfigured`는 API 키가 `YOUR_`로 시작하거나 `VITE_DEMO=1`(`.env.demo`)일 때 거짓이 됩니다. 두 백엔드는 `types.ts`의 `Store` 인터페이스를 구현하므로, 데이터 연산을 추가하거나 바꿀 때는 **인터페이스와 두 파일을 모두 수정**해야 합니다.
+**백엔드 교체 구조** (`src/store.ts`): `config.ts`의 `isConfigured`가 참이면 `backend/firebase.ts`를, 거짓이면 `backend/local.ts`(localStorage 데모 모드, `prompt()`로 닉네임 로그인)를 top-level await로 동적 import합니다. 그래서 `vite.config.ts`의 빌드 target은 es2022입니다. Firebase 설정값은 저장소 루트 `.env`의 `VITE_FIREBASE_*`에서 읽습니다(웹 API 키는 공개 값이라 커밋함). `isConfigured`는 API 키가 비었거나 `YOUR_`로 시작하거나 `VITE_DEMO=1`(`.env.demo`)일 때 거짓이 됩니다. 두 백엔드는 `types.ts`의 `Store` 인터페이스를 구현하므로, 데이터 연산을 추가하거나 바꿀 때는 **인터페이스와 두 파일을 모두 수정**해야 합니다.
 
 **상태** (`src/state/AppContext.tsx`):
 - `AppProvider`가 `store.watch*` 실시간 구독으로 `games`, `profiles`, `guests`, `events`를 채웁니다. 컴포넌트는 `useApp()`으로 읽기만 하고, 쓰기는 `store`를 직접 호출합니다. 쓰기 결과는 구독을 통해 돌아와 다시 렌더링됩니다. 낙관적 업데이트는 없습니다.

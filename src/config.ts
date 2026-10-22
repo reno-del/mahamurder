@@ -1,15 +1,17 @@
-// Firebase 콘솔 > 프로젝트 설정 > 내 앱(웹) 에서 복사한 값으로 교체하세요.
-// 값을 채우기 전에는 브라우저 localStorage에 저장하는 "데모 모드"로 동작합니다.
+// Firebase 설정은 .env의 VITE_FIREBASE_* 값에서 읽습니다.
+// API 키가 비어 있으면 브라우저 localStorage에 저장하는 "데모 모드"로 동작합니다.
+const env = import.meta.env;
+
 export const firebaseConfig = {
-  apiKey: "AIzaSyAmLqQV1URJdfjTQiiNs0gZDehhWijXWC4",
-  authDomain: "mahamuder.firebaseapp.com",
-  projectId: "mahamuder",
-  storageBucket: "mahamuder.firebasestorage.app",
-  messagingSenderId: "1031246131247",
-  appId: "1:1031246131247:web:99c32af6929932bb9016da",
+  apiKey: env.VITE_FIREBASE_API_KEY ?? "",
+  authDomain: env.VITE_FIREBASE_AUTH_DOMAIN ?? "",
+  projectId: env.VITE_FIREBASE_PROJECT_ID ?? "",
+  storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET ?? "",
+  messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID ?? "",
+  appId: env.VITE_FIREBASE_APP_ID ?? "",
 };
 
 export type FirebaseConfig = typeof firebaseConfig;
 
 // `npm run dev:demo`(VITE_DEMO=1)로 실행하면 설정이 있어도 데모 모드로 동작해 실제 데이터를 건드리지 않는다
-export const isConfigured = !firebaseConfig.apiKey.startsWith("YOUR_") && import.meta.env.VITE_DEMO !== "1";
+export const isConfigured = firebaseConfig.apiKey !== "" && !firebaseConfig.apiKey.startsWith("YOUR_") && env.VITE_DEMO !== "1";
