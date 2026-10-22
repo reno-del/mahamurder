@@ -4,6 +4,7 @@ import { store } from "../store";
 import { useApp, useMyName } from "../state/AppContext";
 import { showError } from "../lib/toast";
 import { useLiveStructuredData } from "../lib/usePageMeta";
+import { ChatWidget } from "./ChatWidget";
 
 function AuthBox() {
   const { user, outsider, authReady } = useApp();
@@ -64,6 +65,7 @@ export function Layout({ children }: { children: ReactNode }) {
       <main className="view">{children}</main>
 
       <footer className="footer">머더미스터리 클럽 · 스포일러 금지 🤫</footer>
+      <ChatWidget />
     </>
   );
 }

@@ -114,6 +114,7 @@ export async function create(config: FirebaseConfig): Promise<Store> {
       }
     },
     logout: () => signOut(auth),
+    getIdToken: async () => (await auth.currentUser?.getIdToken()) ?? null,
 
     // ---------- 게임 ----------
     watchGames(cb) {

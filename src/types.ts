@@ -93,6 +93,8 @@ export interface Store {
   join(code: string): Promise<void>;
   // 회원끼리 공유하는 초대 코드 (없으면 null)
   getInviteCode(): Promise<string | null>;
+  // 챗봇 API(/api/chat)에 보낼 로그인 토큰 (로그아웃 상태면 null, 데모 모드는 "demo")
+  getIdToken(): Promise<string | null>;
 
   watchGames(cb: (games: Game[]) => void): Unsubscribe;
   saveGame(game: GameInput): Promise<void>;

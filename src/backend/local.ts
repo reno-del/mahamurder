@@ -89,6 +89,8 @@ export async function create(): Promise<Store> {
     async logout() {
       write("me", null);
     },
+    // 데모 모드에서는 로그인 검사를 건너뛰는 함수 에뮬레이터에 붙으므로 아무 값이나 보낸다
+    getIdToken: async () => "demo",
 
     watchGames: (cb) => watch("games", cb),
     async saveGame({ id, ...data }) {
