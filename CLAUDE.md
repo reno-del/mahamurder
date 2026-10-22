@@ -39,6 +39,7 @@ firebase deploy --only firestore   # firestore.rules / firestore.indexes.json �
 - 게임 표지(`img.boardlife.co.kr`)는 다른 사이트에서 불러오는 것을 막아서 localhost나 헤드리스 캡처에서는 이미지가 깨집니다. Node `fetch`로는 정상으로 받아지므로, 캡처할 때는 요청을 가로채 Node에서 받은 이미지로 대신 응답합니다(`promo/capture.mjs` 참고).
 - Remotion 렌더링과 `promo` 캡처도 네트워크(Chrome Headless Shell 다운로드, 표지 이미지)가 필요하므로 샌드박스 밖에서 실행하세요.
 - `python`은 Windows 스토어 연결만 있어 실행되지 않습니다(종료 코드 49). 여러 군데를 한 번에 고치는 스크립트는 `node`로 작성하세요.
+- 모드별 env 값은 `node -e "import('vite').then(v=>console.log(v.loadEnv('demo','.','VITE_')))"`로 확인합니다(`.env`는 모든 모드에서 읽히고 `.env.demo`가 그 위에 덧씌워짐).
 - Node 24는 `.ts` 파일을 바로 import할 수 있어(`import type`만 쓰면) `src/lib`의 순수 모듈을 node 스크립트로 시험할 수 있습니다. skill-creator의 python 스크립트(`generate_review.py` 등)는 돌지 않으니 node로 옮겨 씁니다.
 - `isolation: "worktree"` 서브에이전트의 작업 폴더는 로컬 `main`이 아니라 `origin/main`에서 만들어집니다. push하지 않은 커밋이 필요하면 먼저 push하거나 그 차이를 감안하세요.
 - Firebase CLI 로그인 정보로 Firestore REST에 직접 쓰는 것은 auto mode 권한 검사가 막습니다. `config/*`처럼 콘솔에서만 바꾸는 데이터는 Claude in Chrome으로 Firebase 콘솔(사용자 로그인됨)에서 고치세요. 없는 문서 경로에서 "필드 추가"는 저장되지 않으니, 컬렉션의 "문서 추가"에서 문서 ID를 직접 입력하세요.
@@ -48,7 +49,7 @@ firebase deploy --only firestore   # firestore.rules / firestore.indexes.json �
 
 ## 아키텍처
 
-**백엔드 교체 구조** (`src/store.ts`): `config.ts`의 `isConfigured`가 참이면 `backend/firebase.ts`를, 거짓이면 `backend/local.ts`(localStorage 데모 모드, `prompt()`로 닉네임 로그인)를 top-level await로 동적 import합니다. 그래서 `vite.config.ts`의 빌드 target은 es2022입니다. Firebase 설정값은 저장소 루트 `.env`의 `VITE_FIREBASE_*`에서 읽습니다(웹 API 키는 공개 값이라 커밋함). `isConfigured`는 API 키가 비었거나 `YOUR_`로 시작하거나 `VITE_DEMO=1`(`.env.demo`)일 때 거짓이 됩니다. 두 백엔드는 `types.ts`의 `Store` 인터페이스를 구현하므로, 데이터 연산을 추가하거나 바꿀 때는 **인터페이스와 두 파일을 모두 수정**해야 합니다.
+**백엔드 교체 구조** (`src/store.ts`): `config.ts`의 `isConfigured`가 참이면 `backend/firebase.ts`를, 거짓이면 `backend/local.ts`(localStorage 데모 모드, `prompt()`로 닉네임 로그인)를 top-level await로 동적 import합니다. 그래서 `vite.config.ts`의 빌드 target은 es2022입니다. Firebase 설정값은 저장소 루트 `.env`의 `VITE_FIREBASE_*`에서 읽습니다(웹 API 키는 공개 값이라 커밋함). `seo/plugin.ts`의 `PROJECT_ID`와 `src/data/site.ts`의 URL은 `.env`를 읽지 않으니 프로젝트를 바꾸면 함께 고치세요. `isConfigured`는 API 키가 비었거나 `YOUR_`로 시작하거나 `VITE_DEMO=1`(`.env.demo`)일 때 거짓이 됩니다. 두 백엔드는 `types.ts`의 `Store` 인터페이스를 구현하므로, 데이터 연산을 추가하거나 바꿀 때는 **인터페이스와 두 파일을 모두 수정**해야 합니다.
 
 **상태** (`src/state/AppContext.tsx`):
 - `AppProvider`가 `store.watch*` 실시간 구독으로 `games`, `profiles`, `guests`, `events`를 채웁니다. 컴포넌트는 `useApp()`으로 읽기만 하고, 쓰기는 `store`를 직접 호출합니다. 쓰기 결과는 구독을 통해 돌아와 다시 렌더링됩니다. 낙관적 업데이트는 없습니다.
