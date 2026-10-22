@@ -40,15 +40,20 @@ def ask(question: str) -> dict:
     return {"text": text, "conditions": conditions, "sources": sources}
 
 
+def md(text: str) -> str:
+    """Streamlit 마크다운은 ~를 취소선으로 읽어 '1~8명'이 '18명'처럼 보이므로 ~를 그대로 보이게 한다."""
+    return text.replace("~", r"\~")
+
+
 def show(msg: dict) -> None:
-    st.markdown(msg["text"])
+    st.markdown(md(msg["text"]))
     if msg.get("conditions"):
         st.caption(f"적용한 조건: {msg['conditions']}")
     if msg.get("sources"):
         scores = [s["score"] for s in msg["sources"]]
         with st.expander(f"참고한 원문 · 최고 유사도 {max(scores):.4f} · 평균 {sum(scores) / len(scores):.4f}"):
             for i, s in enumerate(msg["sources"], 1):
-                st.markdown(f"**[{i}]** 유사도 `{s['score']:.4f}` · [{s['title']}]({s['url']})")
+                st.markdown(f"**[{i}]** 유사도 `{s['score']:.4f}` · [{md(s['title'])}]({s['url']})")
 
 
 st.title("🕵️ 머더미스터리 클럽 챗봇")
@@ -59,12 +64,12 @@ if "messages" not in st.session_state:
 
 for m in st.session_state.messages:
     with st.chat_message(m["role"]):
-        show(m) if m["role"] == "assistant" else st.markdown(m["text"])
+        show(m) if m["role"] == "assistant" else st.markdown(md(m["text"]))
 
 if question := st.chat_input("예: 5명이서 할 만한 게임 추천해 줘"):
     st.session_state.messages.append({"role": "user", "text": question})
     with st.chat_message("user"):
-        st.markdown(question)
+        st.markdown(md(question))
     with st.chat_message("assistant"):
         with st.spinner("찾는 중..."):
             msg = {"role": "assistant", **ask(question)}
