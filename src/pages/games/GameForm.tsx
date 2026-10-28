@@ -3,7 +3,8 @@ import { store } from "../../store";
 import { useModal } from "../../components/Modal";
 import { useApp } from "../../state/AppContext";
 import { showError, toast } from "../../lib/toast";
-import type { Game, GameInput } from "../../types";
+import { CATEGORIES, categoryOf } from "../../lib/category";
+import type { Category, Game, GameInput } from "../../types";
 
 const DIFFICULTIES = ["", "쉬움", "보통", "어려움"];
 
@@ -28,10 +29,8 @@ export function GameForm({ game }: { game?: Game }) {
       maxPlayers: num(f.maxPlayers) ?? num(f.minPlayers),
       playTime: num(f.playTime),
       difficulty: f.difficulty,
-      genres: f.genres
-        .split(",")
-        .map((s) => s.trim())
-        .filter(Boolean),
+      // 장르 태그(genres)는 화면에서 다루지 않는다. 수정할 때는 merge라 기존 태그가 그대로 남는다
+      category: (f.category as Category) || null,
       imageUrl: f.imageUrl.trim(),
       link: f.link.trim(),
       description: f.description.trim(),
@@ -105,15 +104,15 @@ export function GameForm({ game }: { game?: Game }) {
             <option value="no">미정발</option>
           </select>
         </label>
-        <label className="full">
-          장르 (쉼표로 구분)
-          <input
-            className="input"
-            name="genres"
-            placeholder="클로즈드 서클, 추리, 감성"
-            defaultValue={(g.genres || []).join(", ")}
-          />
-        </label>
+        <fieldset className="full category-radio">
+          <legend>분류</legend>
+          {CATEGORIES.map((c) => (
+            <label key={c.id}>
+              <input type="radio" name="category" value={c.id} defaultChecked={categoryOf(g) === c.id} />
+              {c.name} <span className="muted small">({c.hint})</span>
+            </label>
+          ))}
+        </fieldset>
         <label className="full">
           이미지 URL
           <input className="input" name="imageUrl" type="url" defaultValue={v(g.imageUrl)} />

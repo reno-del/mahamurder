@@ -131,7 +131,6 @@ export function useGameHelpers() {
   return {
     gameById: (id?: string) => games.find((g) => g.id === id),
     playedBy,
-    allGenres: () => [...new Set(games.flatMap((g) => g.genres || []))].sort(),
 
     // 친구들이 남긴 평점 평균
     friendRating(gid: string) {

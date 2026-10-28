@@ -4,6 +4,7 @@ import { useModal } from "../../components/Modal";
 import { requireLogin, useApp } from "../../state/AppContext";
 import { showError, toast } from "../../lib/toast";
 import { playTime, players } from "../../lib/format";
+import { categoryName, categoryOf } from "../../lib/category";
 import { csvToGames, matchExisting, normalizeName, readCsvFile, type CsvGame, type Match } from "../../lib/csvGames";
 
 // CSV 파일(murder_mystery_games.csv 형식)을 읽어 사이트에 아직 없는 게임만 골라 등록한다.
@@ -104,7 +105,7 @@ export function CsvImport() {
                         )}
                         <br />
                         <small className="muted">
-                          {[players(m.game), playTime(m.game.playTime), (m.game.genres || []).join(", ")]
+                          {[players(m.game), playTime(m.game.playTime), categoryName(categoryOf(m.game))]
                             .filter(Boolean)
                             .join(" · ")}
                         </small>

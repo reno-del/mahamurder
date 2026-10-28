@@ -148,6 +148,14 @@ textarea.input { resize: vertical; }
 }
 .strip-item:hover { outline: 1px solid var(--accent); }
 
+.category-filter { display: flex; gap: 4px; align-items: center; }
+.category-filter .input { flex: 1; min-width: 0; }
+.category-radio { border: 0; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 13px; color: var(--muted); }
+.category-radio legend { padding: 0; margin-bottom: 4px; font-weight: 500; }
+.form .category-radio label { flex-direction: row; align-items: center; color: var(--text); }
+.category-help div { margin: 10px 0; }
+.category-help dt { font-weight: 700; }
+.category-help dd { margin: 2px 0 0; }
 .toolbar { display: grid; grid-template-columns: 1fr repeat(5, auto) auto auto; gap: 8px; margin-bottom: 18px; }
 @media (max-width: 1100px) and (min-width: 761px) {
   .toolbar { grid-template-columns: repeat(3, 1fr); }

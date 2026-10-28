@@ -2,6 +2,7 @@
 // 열은 순서가 아니라 머리글 이름으로 찾으므로 열이 늘거나 순서가 바뀌어도 된다.
 // 값의 길이·형식은 firestore.rules의 validGame()을 통과하도록 여기서 맞춘다.
 import type { Game, GameInput } from "../types";
+import { categoryFromGenres } from "./category";
 
 export function parseCsv(text: string): string[][] {
   const rows: string[][] = [];
@@ -128,6 +129,7 @@ export function csvToGames(text: string, createdBy?: string): { games: CsvGame[]
     if (!name) return skipped.push(i + 2);
     const rating = toNum(get("rating"));
     const minPlayers = toNum(get("minPlayers"));
+    const genres = get("genres").split("/").map((g) => g.trim()).filter(Boolean).slice(0, 10);
     const game: GameInput = {
       name,
       publisher: pickPublisher(get("publisher")),
@@ -138,7 +140,9 @@ export function csvToGames(text: string, createdBy?: string): { games: CsvGame[]
       maxPlayers: toNum(get("maxPlayers")) ?? minPlayers,
       playTime: toNum(get("playTime")),
       difficulty: toDifficulty(get("difficulty")),
-      genres: get("genres").split("/").map((g) => g.trim()).filter(Boolean).slice(0, 10),
+      // 장르 열은 분류를 정하는 데 쓰고, 태그 자체는 화면에 보이지 않게 genres에만 남긴다
+      category: categoryFromGenres(genres) ?? null,
+      genres,
       imageUrl: clip(firstUrl(get("imageUrl")), 500),
       link: clip(firstUrl(get("boardlife")) || firstUrl(get("source")), 500),
       description: describe(get),

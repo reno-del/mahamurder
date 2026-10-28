@@ -9,9 +9,12 @@ import { showError, toast } from "../../lib/toast";
 import { cleanName, displayName, players, prettyDate, ymd } from "../../lib/format";
 import { GameDetail } from "../games/GameDetail";
 import { usePageMeta } from "../../lib/usePageMeta";
+import { categoryName, categoryOf } from "../../lib/category";
 import type { Game, Profile } from "../../types";
 
-const LENGTHS = ["~2시간", "2~4시간", "4시간 이상", "상관없음"];
+const LENGTHS = ["~1시간", "1~2시간", "2~4시간", "4시간 이상", "상관없음"];
+// 예전 선택지 "~2시간"은 "1~2시간"으로 보여 준다 (다시 고르면 새 값으로 저장됨)
+const lengthOf = (p: Profile) => (p.prefLength === "~2시간" ? "1~2시간" : p.prefLength);
 type Tab = "all" | "played" | "todo" | "liked" | "owned";
 const TABS: [Tab, string][] = [
   ["all", "전체"],
@@ -47,6 +50,7 @@ function ProfileForm({ me }: { me: Profile }) {
     try {
       await store.setProfileField(me.id, "nickname", f.nickname.trim());
       await store.setProfileField(me.id, "bio", f.bio.trim());
+      await store.setProfileField(me.id, "prefNote", f.prefNote.trim());
       toast("프로필을 저장했어요");
     } catch (err) {
       showError(err);
@@ -62,20 +66,30 @@ function ProfileForm({ me }: { me: Profile }) {
         한마디
         <input className="input" name="bio" maxLength={60} placeholder="예) 범인 역할 전문입니다" defaultValue={me.bio || ""} />
       </label>
+      <label>
+        좋아하는 스타일
+        <input
+          className="input"
+          name="prefNote"
+          maxLength={60}
+          placeholder="예) 반전 많은 거, 범인 역할 좋아해요"
+          defaultValue={me.prefNote || ""}
+        />
+      </label>
       <button className="btn btn-sm">저장</button>
     </form>
   );
 }
 
-// 안 해 본 게임 중 선호 장르·선호 표시가 많이 겹치는 순서로 추천
+// 안 해 본 게임 중, 내가 선호 표시하거나 4점 이상 준 게임과 분류가 같고 선호 표시한 것 순서로 추천
 function Recommend({ me, onOpen }: { me: Profile; onOpen: (id: string) => void }) {
   const { games } = useApp();
-  const pref = me.prefGenres || [];
+  const taste = new Set(games.filter((g) => me.liked?.[g.id] || (me.played?.[g.id]?.rating || 0) >= 4).map(categoryOf));
   const list = games
     .filter((g) => !me.played?.[g.id])
     .map((g) => ({
       g,
-      score: (g.genres || []).filter((x) => pref.includes(x)).length * 2 + (me.liked?.[g.id] ? 3 : 0) + (g.rating || 0) / 5,
+      score: (categoryOf(g) && taste.has(categoryOf(g)) ? 2 : 0) + (me.liked?.[g.id] ? 3 : 0) + (g.rating || 0) / 5,
     }))
     .sort((a, b) => b.score - a.score)
     .slice(0, 4);
@@ -91,7 +105,7 @@ function Recommend({ me, onOpen }: { me: Profile; onOpen: (id: string) => void }
               <b>{cleanName(g.name)}</b>
               <br />
               <span className="muted small">
-                {players(g)} · {(g.genres || []).join(", ")}
+                {[players(g), categoryName(categoryOf(g))].filter(Boolean).join(" · ")}
               </span>
             </div>
           </div>
@@ -174,7 +188,7 @@ function Friends() {
             <th>이름</th>
             <th>플레이</th>
             <th>보유</th>
-            <th>선호 장르</th>
+            <th>좋아하는 스타일</th>
             <th>한마디</th>
           </tr>
         </thead>
@@ -184,7 +198,7 @@ function Friends() {
               <td>{displayName(p) || "익명"}</td>
               <td>{Object.keys(p.played || {}).filter((id) => games.some((g) => g.id === id)).length}개</td>
               <td>{Object.keys(p.owned || {}).filter((id) => games.some((g) => g.id === id)).length}개</td>
-              <td>{(p.prefGenres || []).join(", ") || "-"}</td>
+              <td>{p.prefNote || "-"}</td>
               <td className="muted">{p.bio || ""}</td>
             </tr>
           ))}
@@ -196,12 +210,11 @@ function Friends() {
 
 export function MyPage() {
   const { user, me, games, profiles, events } = useApp();
-  const { allGenres } = useGameHelpers();
   const { openModal } = useModal();
   const [tab, setTabState] = useState<Tab>(savedTab);
   const setTab = (t: Tab) => setTabState((savedTab = t));
   const [collapsed, setCollapsedState] = useState(loadCollapsed);
-  usePageMeta("마이페이지", "내가 플레이한 머더미스터리 게임과 평점, 선호 장르, 추천 게임을 기록합니다.", "mypage");
+  usePageMeta("마이페이지", "내가 플레이한 머더미스터리 게임과 평점, 취향, 추천 게임을 기록합니다.", "mypage");
   const toggleCollapsed = () => {
     saveCollapsed(!collapsed);
     setCollapsedState(!collapsed);
@@ -233,8 +246,7 @@ export function MyPage() {
   const myRatings = playedIds.map((id) => me.played![id].rating).filter((r) => r > 0);
   const today = ymd();
   const myEvents = events.filter((e) => e.date >= today && e.participants?.[user.uid]).sort((a, b) => a.date.localeCompare(b.date));
-  const prefGenres = me.prefGenres || [];
-  const genres = [...new Set([...allGenres(), ...prefGenres])];
+  const prefLength = lengthOf(me);
   // 프로필 문서를 받기 전/후로 폼 기본값이 달라지므로 key로 다시 마운트한다
   const profileLoaded = profiles.some((p) => p.id === user.uid);
 
@@ -286,26 +298,10 @@ export function MyPage() {
       </section>
 
       <section className="card">
-        <h2 className="section-title">선호하는 장르</h2>
-        <div className="chips">
-          {genres.length ? (
-            genres.map((g) => (
-              <button
-                key={g}
-                className={`chip ${prefGenres.includes(g) ? "on" : ""}`}
-                onClick={() => setField("prefGenres", prefGenres.includes(g) ? prefGenres.filter((x) => x !== g) : [...prefGenres, g])}
-              >
-                {g}
-              </button>
-            ))
-          ) : (
-            <p className="muted small">게임을 등록하면 장르가 여기에 나타나요.</p>
-          )}
-        </div>
         <h2 className="section-title">선호하는 플레이 시간</h2>
         <div className="chips">
           {LENGTHS.map((l) => (
-            <button key={l} className={`chip ${me.prefLength === l ? "on" : ""}`} onClick={() => setField("prefLength", me.prefLength === l ? null : l)}>
+            <button key={l} className={`chip ${prefLength === l ? "on" : ""}`} onClick={() => setField("prefLength", prefLength === l ? null : l)}>
               {l}
             </button>
           ))}

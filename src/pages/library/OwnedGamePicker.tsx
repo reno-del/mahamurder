@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useApp, useGameHelpers } from "../../state/AppContext";
 import { Cover } from "../../components/Cover";
 import { cleanName } from "../../lib/format";
+import { categoryName, categoryOf } from "../../lib/category";
 import type { Game } from "../../types";
 
 type Show = "all" | "owned" | "notOwned";
@@ -28,7 +29,7 @@ export function OwnedGamePicker({ ownerId }: { ownerId: string }) {
   const list = games
     .filter(
       (g) =>
-        (!query || [g.name, g.publisher, ...(g.genres || [])].join(" ").toLowerCase().includes(query)) &&
+        (!query || [g.name, g.publisher, categoryName(categoryOf(g))].join(" ").toLowerCase().includes(query)) &&
         (show === "all" || !!owned[g.id] === (show === "owned"))
     )
     .sort((a, b) => cleanName(a.name).localeCompare(cleanName(b.name), "ko"));

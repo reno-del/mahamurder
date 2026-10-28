@@ -2,6 +2,7 @@
 // 브라우저와 Node 양쪽에서 돌아가야 하므로 React나 DOM을 import하지 않는다.
 import { FAQ, SITE } from "../data/site";
 import type { Game } from "../types";
+import { categoryName, categoryOf } from "./category";
 
 /** 구조화 데이터에 넣는 공개 게임 정보 (대여 기록 같은 개인 정보는 넣지 않는다) */
 export interface SeoGame {
@@ -11,7 +12,7 @@ export interface SeoGame {
   minPlayers?: number;
   maxPlayers?: number;
   playTime?: number;
-  genres: string[];
+  category?: string; // 분류 이름. 배경 태그(genres)는 스포일러라 넣지 않는다
   imageUrl?: string;
   description?: string;
   localized: boolean;
@@ -30,7 +31,7 @@ export const toSeoGame = (g: Game): SeoGame => ({
   minPlayers: g.minPlayers || undefined,
   maxPlayers: g.maxPlayers || undefined,
   playTime: g.playTime || undefined,
-  genres: g.genres || [],
+  category: categoryName(categoryOf(g)) || undefined,
   imageUrl: g.imageUrl || undefined,
   description: g.description || undefined,
   localized: g.localized !== false,
@@ -42,7 +43,7 @@ export const timeText = (m?: number) => (!m ? "" : m >= 60 ? `${Math.floor(m / 6
 
 /** "4~6인 · 3시간 · 추리 · 출판사" 같은 한 줄 요약 */
 export const gameSummary = (g: SeoGame) =>
-  [playersText(g), timeText(g.playTime), g.genres.join(", "), g.publisher, g.localized ? "" : "미정발"].filter(Boolean).join(" · ");
+  [playersText(g), timeText(g.playTime), g.category, g.publisher, g.localized ? "" : "미정발"].filter(Boolean).join(" · ");
 
 /** 게임 페이지의 meta description: 한 줄 요약 + 소개 앞부분 (검색 결과에 잘리지 않을 길이로) */
 export function gameDescription(g: SeoGame) {
@@ -82,7 +83,7 @@ function boardGame(g: SeoGame) {
       numberOfPlayers: { "@type": "QuantitativeValue", minValue: g.minPlayers, maxValue: g.maxPlayers || g.minPlayers },
     }),
     ...(g.playTime && { timeRequired: `PT${g.playTime}M` }),
-    ...(g.genres.length && { genre: g.genres }),
+    ...(g.category && { genre: g.category }),
   };
 }
 

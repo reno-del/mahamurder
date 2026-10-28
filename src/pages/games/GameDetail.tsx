@@ -7,6 +7,7 @@ import { showError, toast } from "../../lib/toast";
 import { displayName, playTime, players, prettyDate, safeUrl, stars, won } from "../../lib/format";
 import { RentalButton } from "../../components/RentalButton";
 import { GameForm } from "./GameForm";
+import { categoryName, categoryOf } from "../../lib/category";
 
 export function GameDetail({ gameId }: { gameId: string }) {
   const { user, me, events } = useApp();
@@ -85,13 +86,11 @@ export function GameDetail({ gameId }: { gameId: string }) {
               <dd>{copies.length ? `${copies.length}명 보유` : user ? "구비 안 됨" : "-"}</dd>
             </div>
           </dl>
-          <div className="tags">
-            {(g.genres || []).map((t) => (
-              <span key={t} className="tag">
-                {t}
-              </span>
-            ))}
-          </div>
+          {categoryOf(g) && (
+            <div className="tags">
+              <span className="tag">{categoryName(categoryOf(g))}</span>
+            </div>
+          )}
         </div>
       </div>
       {g.description && <p className="desc">{g.description}</p>}

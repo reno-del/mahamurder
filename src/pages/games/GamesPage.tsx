@@ -12,12 +12,13 @@ import { CsvImport } from "./CsvImport";
 import { usePageMeta } from "../../lib/usePageMeta";
 import { gameDescription, toSeoGame } from "../../lib/seo";
 import { FAQ } from "../../data/site";
+import { CATEGORIES, categoryName, categoryOf } from "../../lib/category";
 import type { Game } from "../../types";
 
 type SortKey = "rating" | "release" | "priceAsc" | "popular" | "name";
 interface Filter {
   q: string;
-  genre: string;
+  category: string; // 분류 id, "none"은 분류 없는 게임만
   size: string;
   owned: "" | "yes" | "no";
   localized: "" | "yes" | "no";
@@ -25,7 +26,31 @@ interface Filter {
 }
 
 // 다른 페이지에 다녀와도 검색 조건이 유지되도록 모듈에 보관
-let savedFilter: Filter = { q: "", genre: "", size: "", owned: "", localized: "", sort: "rating" };
+let savedFilter: Filter = { q: "", category: "", size: "", owned: "", localized: "", sort: "rating" };
+
+function CategoryHelp() {
+  return (
+    <>
+      <h2>분류 안내</h2>
+      <dl className="category-help">
+        {CATEGORIES.map((c) => (
+          <div key={c.id}>
+            <dt>
+              {c.name} <span className="muted small">({c.hint})</span>
+            </dt>
+            <dd>{c.intro}</dd>
+          </div>
+        ))}
+      </dl>
+      <p className="muted small">배경이나 세계관 같은 태그는 스포일러가 될 수 있어서 보여 주지 않아요.</p>
+      <div className="form-actions">
+        <button className="btn" data-close>
+          닫기
+        </button>
+      </div>
+    </>
+  );
+}
 
 function UpcomingStrip() {
   const { user, events } = useApp();
@@ -107,13 +132,11 @@ function GameCard({ game: g, onOpen }: { game: Game; onOpen: () => void }) {
             <dd>{playTime(g.playTime) || "-"}</dd>
           </div>
         </dl>
-        <div className="tags">
-          {(g.genres || []).map((t) => (
-            <span key={t} className="tag">
-              {t}
-            </span>
-          ))}
-        </div>
+        {categoryOf(g) && (
+          <div className="tags">
+            <span className="tag">{categoryName(categoryOf(g))}</span>
+          </div>
+        )}
         {n > 0 && <p className="muted small">👥 친구 {n}명 플레이</p>}
       </div>
     </article>
@@ -122,7 +145,7 @@ function GameCard({ game: g, onOpen }: { game: Game; onOpen: () => void }) {
 
 export function GamesPage() {
   const { user, games } = useApp();
-  const { allGenres, playedBy, ownersOf } = useGameHelpers();
+  const { playedBy, ownersOf } = useGameHelpers();
   const { openModal, closeModal } = useModal();
   const [filter, setFilter] = useState<Filter>(savedFilter);
   useEffect(() => {
@@ -184,8 +207,8 @@ export function GamesPage() {
   const list = games
     .filter(
       (g) =>
-        (!q || [g.name, g.publisher, g.description, ...(g.genres || [])].join(" ").toLowerCase().includes(q)) &&
-        (!filter.genre || (g.genres || []).includes(filter.genre)) &&
+        (!q || [g.name, g.publisher, g.description, categoryName(categoryOf(g))].join(" ").toLowerCase().includes(q)) &&
+        (!filter.category || (categoryOf(g) || "none") === filter.category) &&
         fitsSize(g) &&
         (!filter.owned || ownersOf(g.id).length > 0 === (filter.owned === "yes")) &&
         (!filter.localized || (g.localized !== false) === (filter.localized === "yes"))
@@ -206,18 +229,24 @@ export function GamesPage() {
           id="f-q"
           className="input"
           type="search"
-          placeholder="게임 이름, 장르, 제작사 검색"
+          placeholder="게임 이름, 분류, 제작사 검색"
           value={filter.q}
           onChange={(e) => set("q", e.target.value)}
         />
-        <select className="input" value={filter.genre} onChange={(e) => set("genre", e.target.value)}>
-          <option value="">장르 전체</option>
-          {allGenres().map((g) => (
-            <option key={g} value={g}>
-              {g}
-            </option>
-          ))}
-        </select>
+        <span className="category-filter">
+          <select className="input" value={filter.category} onChange={(e) => set("category", e.target.value)}>
+            <option value="">분류 전체</option>
+            {CATEGORIES.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}({c.hint})
+              </option>
+            ))}
+            <option value="none">분류 없음</option>
+          </select>
+          <button type="button" className="btn btn-ghost btn-sm" aria-label="분류 안내" title="분류 안내" onClick={() => openModal(<CategoryHelp />)}>
+            ?
+          </button>
+        </span>
         <select className="input" value={filter.size} onChange={(e) => set("size", e.target.value)}>
           <option value="">인원 전체</option>
           {[3, 4, 5, 6, 7, 8, 9, 10].map((n) => (

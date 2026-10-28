@@ -7,6 +7,7 @@
 // 게임은 빌드(=배포) 시점 기준이므로 게임이 바뀌면 다시 배포해야 반영된다.
 import type { HtmlTagDescriptor, Plugin } from "vite";
 import { FAQ, SITE } from "../src/data/site";
+import { categoryName, categoryOf } from "../src/lib/category";
 import {
   gameDescription,
   gameStructuredData,
@@ -72,7 +73,13 @@ async function fetchGames(): Promise<BuiltGame[]> {
         minPlayers: num(f.minPlayers),
         maxPlayers: num(f.maxPlayers),
         playTime: num(f.playTime),
-        genres: (f.genres?.arrayValue?.values || []).map((v) => str(v)).filter((s): s is string => !!s),
+        category:
+          categoryName(
+            categoryOf({
+              category: str(f.category),
+              genres: (f.genres?.arrayValue?.values || []).map((v) => str(v)).filter((s): s is string => !!s),
+            })
+          ) || undefined,
         imageUrl: str(f.imageUrl),
         description: str(f.description),
         localized: f.localized?.booleanValue !== false,
@@ -115,7 +122,7 @@ function gameBody(g: BuiltGame) {
   const facts = [
     ["인원", playersText(g)],
     ["플레이 시간", timeText(g.playTime)],
-    ["장르", g.genres.join(", ")],
+    ["분류", g.category || ""],
     ["제작사", g.publisher || ""],
     ["정발 여부", g.localized ? "정발됨" : "미정발"],
   ].filter(([, v]) => v);
@@ -187,10 +194,10 @@ function llmsTxt(games: BuiltGame[]) {
     "",
     "## 주요 화면",
     "",
-    `- [게임 소개](${SITE.url}games): 인원·장르·정발 여부·보유 여부로 게임 검색, 친구 평점`,
+    `- [게임 소개](${SITE.url}games): 분류·인원·정발 여부·보유 여부로 게임 검색, 친구 평점`,
     `- [일정 모집](${SITE.url}schedule): 달력으로 모임 일정을 만들고 참가`,
     `- [보유 게임](${SITE.url}library): 친구별 보유 게임과 대여 현황`,
-    `- [마이페이지](${SITE.url}mypage): 플레이 기록, 선호 장르, 추천 게임`,
+    `- [마이페이지](${SITE.url}mypage): 플레이 기록, 취향, 추천 게임`,
     "",
     "## 자주 묻는 질문",
     "",

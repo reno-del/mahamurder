@@ -24,12 +24,13 @@ service cloud.firestore {
         && optNum(d, 'minPlayers') && optNum(d, 'maxPlayers')
         && optUrl(d, 'imageUrl') && optUrl(d, 'link')
         && (!('genres' in d) || (d.genres is list && d.genres.size() <= 10))
+        && (!('category' in d) || d.category == null || d.category in ['murder', 'deduction', 'social'])
         && (!('localized' in d) || d.localized is bool);
     }
     // 게임 정보 수정 화면에서 바꿀 수 있는 필드. createdBy·createdAt·rentals는 여기서 못 바꾼다
     function editableFields() {
       return ['name', 'publisher', 'price', 'releaseDate', 'rating', 'minPlayers', 'maxPlayers', 'playTime',
-        'difficulty', 'genres', 'imageUrl', 'link', 'description', 'localized', 'updatedAt'];
+        'difficulty', 'category', 'genres', 'imageUrl', 'link', 'description', 'localized', 'updatedAt'];
     }
     function editsGame() {
       return request.resource.data.diff(resource.data).affectedKeys().hasOnly(editableFields())

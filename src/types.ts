@@ -1,5 +1,7 @@
 // Firestore 문서 형태. 권한은 firestore.rules 참고.
 
+export type Category = "murder" | "deduction" | "social";
+
 export interface Game {
   id: string;
   name: string;
@@ -11,7 +13,8 @@ export interface Game {
   maxPlayers?: number | null;
   playTime?: number | null; // 분
   difficulty?: string;
-  genres?: string[];
+  category?: Category | null; // 분류. 값이 없으면 genres에서 정한다 (lib/category.ts의 categoryOf)
+  genres?: string[]; // 예전 장르 태그. 스포일러라 화면에 보여 주지 않고 분류를 정할 때만 쓴다
   imageUrl?: string;
   link?: string;
   description?: string;
@@ -43,7 +46,8 @@ export interface Profile {
   played?: Record<string, PlayRecord>;
   liked?: Record<string, true>;
   owned?: Record<string, true>; // 내가 가지고 있는 게임
-  prefGenres?: string[];
+  prefGenres?: string[]; // 예전 선호 장르(태그). 스포일러라 화면에서는 더 이상 읽지 않는다
+  prefNote?: string; // 좋아하는 스타일 (자유 입력)
   prefLength?: string;
 }
 
