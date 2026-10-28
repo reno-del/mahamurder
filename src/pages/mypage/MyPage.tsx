@@ -6,8 +6,10 @@ import { useModal } from "../../components/Modal";
 import { LoginRequired } from "../../components/Layout";
 import { Cover } from "../../components/Cover";
 import { showError, toast } from "../../lib/toast";
-import { cleanName, displayName, players, prettyDate, ymd } from "../../lib/format";
+import { cleanName, displayName, players, playTime, prettyDate, ymd } from "../../lib/format";
 import { GameDetail } from "../games/GameDetail";
+import { GameTiles } from "../../components/GameTiles";
+import { FriendGames } from "./FriendGames";
 import { usePageMeta } from "../../lib/usePageMeta";
 import { categoryName, categoryOf } from "../../lib/category";
 import type { Game, Profile } from "../../types";
@@ -115,6 +117,62 @@ function Recommend({ me, onOpen }: { me: Profile; onOpen: (id: string) => void }
   );
 }
 
+type TodoShow = "all" | "owned" | "liked";
+const TODO_SHOWS: [TodoShow, string][] = [
+  ["all", "전체"],
+  ["owned", "친구가 보유"],
+  ["liked", "선호"],
+];
+let savedTodoShow: TodoShow = "all";
+
+// 아직 안 해 본 게임을 표지와 함께. "친구가 보유"는 우리 중 누가 가지고 있어 바로 할 수 있는 게임
+function Unplayed({ me, onOpen }: { me: Profile; onOpen: (id: string) => void }) {
+  const { games } = useApp();
+  const { ownersOf } = useGameHelpers();
+  const [show, setShowState] = useState<TodoShow>(savedTodoShow);
+  const setShow = (s: TodoShow) => setShowState((savedTodoShow = s));
+  const todo = games.filter((g) => !me.played?.[g.id]).sort((a, b) => cleanName(a.name).localeCompare(cleanName(b.name), "ko"));
+  const keep: Record<TodoShow, (g: Game) => boolean> = {
+    all: () => true,
+    owned: (g) => ownersOf(g.id).length > 0,
+    liked: (g) => !!me.liked?.[g.id],
+  };
+  return (
+    <section className="card">
+      <div className="section-head">
+        <h2 className="section-title">🧩 아직 안 해 본 게임 ({todo.length})</h2>
+        <div className="seg">
+          {TODO_SHOWS.map(([s, label]) => (
+            <button key={s} className={show === s ? "on" : ""} onClick={() => setShow(s)}>
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+      <GameTiles
+        key={show}
+        games={todo.filter(keep[show])}
+        onOpen={onOpen}
+        sub={(g) => {
+          const owners = ownersOf(g.id);
+          return (
+            <>
+              {[players(g), playTime(g.playTime)].filter(Boolean).join(" · ")}
+              {owners.length > 0 && (
+                <>
+                  <br />
+                  📦 {owners.map((o) => (o.id === me.id ? "나" : o.name)).join(", ")}
+                </>
+              )}
+            </>
+          );
+        }}
+        empty={show === "all" ? "모든 게임을 다 해 봤어요! 🎉" : "해당하는 게임이 없어요."}
+      />
+    </section>
+  );
+}
+
 function Checklist({ me, tab, onOpen }: { me: Profile; tab: Tab; onOpen: (id: string) => void }) {
   const { games } = useApp();
   const { togglePlayed, toggleLiked, setRating, toggleOwned } = useGameHelpers();
@@ -176,7 +234,7 @@ function Checklist({ me, tab, onOpen }: { me: Profile; tab: Tab; onOpen: (id: st
   );
 }
 
-function Friends() {
+function Friends({ onOpenFriend }: { onOpenFriend: (id: string) => void }) {
   const { user, profiles, games } = useApp();
   const others = profiles.filter((p) => p.id !== user?.uid);
   if (!others.length) return <p className="muted small">아직 다른 친구가 없어요. 사이트 주소를 공유해 보세요!</p>;
@@ -187,21 +245,30 @@ function Friends() {
           <tr>
             <th>이름</th>
             <th>플레이</th>
+            <th>안 해봄</th>
             <th>보유</th>
             <th>좋아하는 스타일</th>
             <th>한마디</th>
           </tr>
         </thead>
         <tbody>
-          {others.map((p) => (
-            <tr key={p.id}>
-              <td>{displayName(p) || "익명"}</td>
-              <td>{Object.keys(p.played || {}).filter((id) => games.some((g) => g.id === id)).length}개</td>
-              <td>{Object.keys(p.owned || {}).filter((id) => games.some((g) => g.id === id)).length}개</td>
-              <td>{p.prefNote || "-"}</td>
-              <td className="muted">{p.bio || ""}</td>
-            </tr>
-          ))}
+          {others.map((p) => {
+            const playedCount = games.filter((g) => p.played?.[g.id]).length;
+            return (
+              <tr key={p.id}>
+                <td>
+                  <button className="link-btn" title="해 본 게임과 안 해 본 게임 보기" onClick={() => onOpenFriend(p.id)}>
+                    {displayName(p) || "익명"}
+                  </button>
+                </td>
+                <td>{playedCount}개</td>
+                <td>{games.length - playedCount}개</td>
+                <td>{Object.keys(p.owned || {}).filter((id) => games.some((g) => g.id === id)).length}개</td>
+                <td>{p.prefNote || "-"}</td>
+                <td className="muted">{p.bio || ""}</td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>
@@ -310,6 +377,8 @@ export function MyPage() {
 
       <Recommend me={me} onOpen={openDetail} />
 
+      <Unplayed me={me} onOpen={openDetail} />
+
       <section className="card">
         <div className="section-head">
           <h2 className="section-title">게임 기록</h2>
@@ -345,7 +414,8 @@ export function MyPage() {
             🔗 친구 초대 링크 복사
           </button>
         </div>
-        <Friends />
+        <p className="muted small">친구 이름을 누르면 그 친구가 해 본 게임과 안 해 본 게임을 볼 수 있어요.</p>
+        <Friends onOpenFriend={(id) => openModal(<FriendGames profileId={id} />)} />
       </section>
     </div>
   );

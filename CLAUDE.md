@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 개요
 
-"머더미스터리 클럽": 지인들끼리 머더미스터리 게임 소개, 플레이 기록, 일정 모집을 공유하는 사이트입니다. React 18, TypeScript, Vite로 만들었고, Firebase Hosting과 Firestore, Google 로그인을 사용합니다. 라우팅은 react-router의 `BrowserRouter`로 경로 주소(`/games`, `/games/<id>`, `/schedule`, `/library`, `/mypage`)를 씁니다(라우트는 `main.tsx`, 상단 메뉴는 `components/Layout.tsx`). 예전 해시 주소(`#/games` 등)로 들어오면 `main.tsx`가 렌더링 전에 같은 경로로 바꿉니다. `/games/<id>`는 게임 목록 위에 그 게임의 상세 모달을 띄우고, 모달을 닫으면 `/games`로 돌아갑니다(`GamesPage`). 다른 페이지(마이페이지·보유 게임·일정)에서 여는 게임 상세는 주소를 바꾸지 않는 모달입니다. Firebase Hosting은 `firebase.json`의 `cleanUrls`와 `**` → `/index.html` rewrite로 이 주소들을 처리합니다.
+"머더미스터리 클럽": 지인들끼리 머더미스터리 게임 소개, 플레이 기록, 일정 모집을 공유하는 사이트입니다. React 18, TypeScript, Vite로 만들었고, Firebase Hosting과 Firestore, Google 로그인을 사용합니다. 라우팅은 react-router의 `BrowserRouter`로 경로 주소(`/games`, `/games/<id>`, `/schedule`, `/library`, `/tonight`, `/mypage`)를 씁니다(라우트는 `main.tsx`, 상단 메뉴는 `components/Layout.tsx`). 예전 해시 주소(`#/games` 등)로 들어오면 `main.tsx`가 렌더링 전에 같은 경로로 바꿉니다. `/games/<id>`는 게임 목록 위에 그 게임의 상세 모달을 띄우고, 모달을 닫으면 `/games`로 돌아갑니다(`GamesPage`). 다른 페이지(마이페이지·보유 게임·일정)에서 여는 게임 상세는 주소를 바꾸지 않는 모달입니다. Firebase Hosting은 `firebase.json`의 `cleanUrls`와 `**` → `/index.html` rewrite로 이 주소들을 처리합니다.
 
 - Firebase 프로젝트 ID: `mahamuder` (`.firebaserc`), 배포 URL: https://mahamuder.web.app
 - GitHub: https://github.com/reno-del/mahamurder (저장소 이름 철자가 프로젝트 ID와 다름).
@@ -64,6 +64,8 @@ npm run deploy                     # 위 두 명령을 hosting → firestore 순
 - `useGameHelpers()`는 플레이, 선호, 평점, 보유 토글과 대여·반납처럼 여러 페이지가 공유하는 동작을 모아 둔 훅입니다. 확인창(`confirm`)과 토스트도 이 안에서 처리하므로, 페이지에서 `store`의 대여·보유 메서드를 직접 부르기보다 이 훅을 쓰세요. 로그인이 필요한 동작은 `requireLogin(user)`로 막습니다.
 
 **모달** (`src/components/Modal.tsx`): `useModal().openModal(<Component ... />)`로 하나뿐인 `<dialog>`에 내용을 띄웁니다. 내용으로는 스냅샷이 아니라 **id를 받아 `useApp()`에서 직접 찾는 컴포넌트**(`GameDetail`, `EventModal`, `OwnedGamePicker`)를 넘깁니다. 그래야 데이터가 바뀌면 모달도 자동으로 최신 상태가 됩니다. `data-close` 속성이 있는 버튼과 backdrop 클릭으로 닫힙니다. `openModal(content, { onClose })`로 닫힐 때 할 일을 넘길 수 있고(다른 내용으로 바뀌면 불리지 않음), `/games/<id>` 주소와 모달을 맞추는 데 씁니다. `<dialog>`의 close 이벤트는 비동기라, 닫고 곧바로 다른 내용을 여는 코드는 순서에 주의하세요. 모달은 라우트 트리 밖에 렌더링되므로, 페이지와 상태를 공유해야 하면 모듈 수준 상태를 씁니다(예: 달력 월 `lib/calendarView.ts`, 검색 필터와 마이페이지 탭은 각 파일의 모듈 변수).
+
+**표지 격자** (`components/GameTiles.tsx`): 게임을 표지와 이름으로 보여 주는 격자(24개씩 "더 보기")입니다. 마이페이지 "아직 안 해 본 게임", 친구 기록 모달(`pages/mypage/FriendGames.tsx`, 친구 표의 이름을 누르면 열림), `/tonight`("오늘 뭐 하지", `pages/tonight/TonightPage.tsx`: 고른 사람들의 보유 게임 중 고른 회원 누구도 안 해 본 게임)에서 씁니다.
 
 **스타일**: 전역 CSS 파일 `src/styles/style.css` 하나만 사용합니다(CSS 모듈이나 CSS-in-JS는 쓰지 않음). 이전 버전의 클래스 이름(`card`, `btn btn-primary`, `modal`, `cal-day` 등)을 그대로 이어받았으므로, 새 컴포넌트도 기존 클래스를 재사용하세요.
 
