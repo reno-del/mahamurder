@@ -9,9 +9,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Firebase 프로젝트 ID: `mahamuder` (`.firebaserc`), 배포 URL: https://mahamuder.web.app
 - GitHub: https://github.com/reno-del/mahamurder (저장소 이름 철자가 프로젝트 ID와 다름).
 - 커밋 작성자 이메일은 `85153521+reno-del@users.noreply.github.com`(레포 `git config user.email`)입니다. GitHub Contributors는 이 이메일로 계정을 찾으므로, 예전 `giwan328@naver.com`(kkk0328 계정으로 잡힘)으로 커밋하지 마세요.
-- 기능 소개 문서: `README.md`(마크다운, mermaid 다이어그램), `feature-overview.html`, `feature-guide.html`(번호 핀 안내서, `shots/*.png`를 참조하므로 Artifact로 올릴 때 `shots/*`를 함께 올림). 셋 다 저장소 루트 `shots/`의 데모 스크린샷(1920×1080)을 씁니다. 예전에는 `promo/`(Remotion 홍보 영상 패키지)의 캡처 스크립트로 찍었지만 2026-10-28에 홍보 영상과 RAG 챗봇을 저장소에서 지웠으므로, 화면이 바뀌면 `npm run dev:demo` 화면을 직접 찍어 바꾸고 핀 위치를 확인하세요.
+- 기능 소개 문서: `README.md`(마크다운, mermaid 다이어그램), `feature-overview.html`, `feature-guide.html`(번호 핀 안내서). 셋 다 저장소 루트 `shots/*.png`(데모 모드 화면, 1920×1080)를 쓰므로 Artifact로 올릴 때 `shots/*`를 함께 올리고, 화면이 바뀌면 `npm run dev:demo` 화면을 다시 찍어 바꾼 뒤 핀 위치를 확인하세요.
 - 테스트와 린트 설정은 없습니다. 검증은 `npm run typecheck`와 브라우저 확인(로그인·쓰기 기능은 `npm run dev:demo`)으로 합니다. 브라우저 패널용 실행 설정은 `.claude/launch.json`의 `dev-demo`(포트 5173)입니다. 데모 모드의 데이터는 브라우저 localStorage(`mm_games`, `mm_users`, `mm_guests`, `mm_events`, `mm_me`)에 있어서, 여러 친구가 필요한 화면은 이 값을 직접 채워 테스트할 수 있습니다.
 - 브랜치: `main` 하나만 쓰고 배포도 `main`에서 합니다. 예전 `react-ts` 브랜치는 2026-10-21에 `main`으로 합쳐서 없앴습니다. 이전 버전(빌드 없는 순수 HTML/JS)은 `main` 기록의 커밋 `474506c`에 남아 있습니다.
+- 2026-10-28에 RAG 챗봇(`chatbot/`, Python Firebase 함수 `functions/`, `ChatWidget`)과 Remotion 홍보 영상(`promo/`)을 저장소에서 지웠습니다(커밋 `dc16ae4`, 되살릴 때는 그 이전 기록). Firebase에 배포된 `chat` 함수(asia-northeast3)는 따로 지우기 전까지 남아 있을 수 있습니다.
 
 ## 명령어
 
@@ -24,6 +25,7 @@ npm run preview        # dist/를 vite preview로 열기 (cleanUrls·rewrite는 
 firebase serve --only hosting      # dist/를 실제 Hosting 규칙(cleanUrls·rewrite)대로 로컬에서 열기
 firebase deploy --only hosting     # predeploy에서 npm run build가 자동 실행됨
 firebase deploy --only firestore   # firestore.rules / firestore.indexes.json 배포
+npm run deploy                     # 위 두 명령을 hosting → firestore 순서로 실행
 ```
 
 자동 배포: `main`에 push하면 `.github/workflows/deploy.yml`(GitHub Actions)이 hosting → firestore 순서로 배포합니다(문서·스크린샷·CSV만 바뀐 push는 건너뜀, Actions 탭에서 수동 실행도 가능). 저장소 비밀값 `FIREBASE_SERVICE_ACCOUNT`(mahamuder 서비스 계정 키 JSON)가 필요하고, 로컬에서 한 번에 배포할 때는 `npm run deploy`(같은 순서)를 씁니다. workflow 파일을 push하려면 `gh` 토큰에 `workflow` 권한이 있어야 합니다(`gh auth refresh -s workflow`).
@@ -31,14 +33,13 @@ firebase deploy --only firestore   # firestore.rules / firestore.indexes.json �
 배포 순서: hosting을 먼저, 이어서 firestore 규칙을 배포합니다(규칙이 먼저 올라가면 예전 화면의 게임 추가가 실패함). `config/invite` 문서(`code` 필드)가 없으면 새 회원은 가입할 수 없습니다(2026-10-21에 만들어 둠). 회원이 마이페이지 "친구 초대 링크 복사"에서 "초대 코드가 아직 설정되지 않았어요"를 보면 권한 문제가 아니라 이 문서가 없거나 `code`가 빈 것입니다.
 
 이 PC 환경에 관한 메모:
-- `git`은 `C:\Program Files\Git\cmd\git.exe`, Node 24는 `C:\Program Files\nodejs`(2026-10-28 winget `OpenJS.NodeJS.LTS`로 설치), `firebase`는 `%APPDATA%\npm\firebase.cmd`, `gh`는 `C:\Program Files\GitHub CLI\gh.exe`에 있습니다. 설치 전에 열린 셸에서는 PATH에 잡히지 않으므로 `$env:PATH = "C:\Program Files\nodejs;$env:APPDATA\npm;$env:PATH"`를 앞에 붙이거나 전체 경로로 실행하세요. git push는 `gh` 자격 증명(reno-del)을 씁니다.
+- `git`은 `C:\Program Files\Git\cmd\git.exe`, Node 24는 `C:\Program Files\nodejs`(2026-10-28 winget `OpenJS.NodeJS.LTS`로 설치), `firebase`는 `%APPDATA%\npm\firebase.cmd`, `gh`는 `C:\Program Files\GitHub CLI\gh.exe`에 있습니다. 설치 전에 열린 셸에서는 PATH에 잡히지 않으므로 `$env:PATH = "C:\Program Files\nodejs;$env:APPDATA\npm;$env:PATH"`를 앞에 붙이거나 전체 경로로 실행하세요. git push는 `gh` 자격 증명(reno-del)을 씁니다. Firebase CLI는 이 PC에서 아직 `firebase login`을 하지 않았을 수 있으니(`firebase login:list`로 확인) 배포 전에 확인하세요.
 - 샌드박스 셸에서는 Firebase 로그인 정보와 전역 npm 설치가 보이지 않습니다. `npm`, `firebase`, `git push`는 샌드박스 밖에서 실행해야 합니다. 특히 `npm run build`는 Firestore에서 게임 목록을 받아 오므로, 네트워크가 막힌 곳에서 돌리면 경고만 남기고 게임 페이지·게임 목록이 빠진 결과물이 나옵니다. 배포 전 빌드 로그에 `게임 N개를 ... 만들어요`가 찍히는지 확인하세요.
 - GitHub 정보(contributors, 커밋 작성자 계정, Actions 실행 결과 등)는 `gh`로 읽습니다(`gh run list --repo reno-del/mahamurder`).
-- 저장소 루트의 `TqYTP92UPNpa7OaoznNJ4w.mp4`(23MB)도 추적하지 않는 파일입니다. 커밋하지 마세요.
-- 저장소 루트의 `murder_mystery_games.csv`는 머더미스터리 게임 목록 데이터(보드라이프 기준, 2026-10-21부터 저장소에 포함)입니다. 커밋할 때는 `git add -A` 대신 파일을 지정해서 추가하세요(위 mp4가 섞이지 않게). CSV에 게임을 모으는 것은 `update-mm-games`, 사이트로 옮기는 것은 `import-csv-games` 스킬(게임 목록의 "CSV 가져오기", 변환은 `src/lib/csvGames.ts`)이 맡습니다.
-- `ffmpeg`는 설치되어 있지 않습니다. 헤드리스 브라우저가 필요하면 Edge(`C:Program Files (x86)MicrosoftEdgeApplicationmsedge.exe`)를 `puppeteer-core`로 띄우면 됩니다.
+- 저장소 루트의 `murder_mystery_games.csv`는 머더미스터리 게임 목록 데이터(보드라이프 기준, 2026-10-21부터 저장소에 포함)입니다. 커밋할 때는 `git add -A` 대신 파일을 지정해서 추가하세요(로컬에만 둔 파일이 섞이지 않게). CSV에 게임을 모으는 것은 `update-mm-games`, 사이트로 옮기는 것은 `import-csv-games` 스킬(게임 목록의 "CSV 가져오기", 변환은 `src/lib/csvGames.ts`)이 맡습니다.
+- `ffmpeg`는 설치되어 있지 않습니다. 헤드리스 브라우저가 필요하면 Edge(`C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe`)를 `puppeteer-core`로 띄우면 됩니다.
 - 게임 표지(`img.boardlife.co.kr`)는 다른 사이트에서 불러오는 것을 막아서 localhost나 헤드리스 캡처에서는 이미지가 깨집니다. Node `fetch`로는 정상으로 받아지므로, 캡처할 때는 요청을 가로채 Node에서 받은 이미지로 대신 응답하세요.
-- PATH의 Python은 3.14(`%LOCALAPPDATA%Pythoninpython.exe`)뿐입니다. 사이트 쪽 일괄 수정 스크립트는 `node`로 작성하세요.
+- PATH의 Python은 3.14(`%LOCALAPPDATA%\Python\bin\python.exe`)뿐입니다. 사이트 쪽 일괄 수정 스크립트는 `node`로 작성하세요.
 - 모드별 env 값은 `node -e "import('vite').then(v=>console.log(v.loadEnv('demo','.','VITE_')))"`로 확인합니다(`.env`는 모든 모드에서 읽히고 `.env.demo`가 그 위에 덧씌워짐).
 - Node 24는 `.ts` 파일을 바로 import할 수 있어(`import type`만 쓰면) `src/lib`의 순수 모듈을 node 스크립트로 시험할 수 있습니다. skill-creator의 python 스크립트(`generate_review.py` 등)는 돌지 않으니 node로 옮겨 씁니다.
 - `isolation: "worktree"` 서브에이전트의 작업 폴더는 로컬 `main`이 아니라 `origin/main`에서 만들어집니다. push하지 않은 커밋이 필요하면 먼저 push하거나 그 차이를 감안하세요.
