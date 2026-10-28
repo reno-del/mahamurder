@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useApp, useGameHelpers, type Owner } from "../../state/AppContext";
 import { useModal } from "../../components/Modal";
 import { LoginRequired } from "../../components/Layout";
@@ -6,6 +6,7 @@ import { GameTiles } from "../../components/GameTiles";
 import { cleanName, displayName, players, playTime } from "../../lib/format";
 import { GameDetail } from "../games/GameDetail";
 import { usePageMeta } from "../../lib/usePageMeta";
+import { MAX_PEOPLE, splitTeams } from "../../lib/teamSplit";
 import type { Game } from "../../types";
 
 type Source = "attending" | "all";
@@ -14,6 +15,7 @@ type Source = "attending" | "all";
 let savedPicked: string[] | null = null;
 let savedSource: Source = "attending";
 let savedFitOnly = true;
+let savedTeamCount = 2;
 
 // 인원 정보가 없으면 null, 있으면 지금 인원으로 할 수 있는지
 function fits(g: Game, n: number) {
@@ -33,6 +35,7 @@ export function TonightPage() {
   const [pickedState, setPickedState] = useState(savedPicked);
   const [source, setSourceState] = useState<Source>(savedSource);
   const [fitOnly, setFitOnlyState] = useState(savedFitOnly);
+  const [teamCount, setTeamCountState] = useState(savedTeamCount);
   usePageMeta("오늘 뭐 하지", "오늘 모인 친구들이 아직 안 해 본 보유 게임을 찾아 줍니다.", "tonight");
 
   if (!user) return <LoginRequired title="🎲 오늘 뭐 하지" message="로그인하면 오늘 모인 친구들이 안 해 본 게임을 찾아 줘요." />;
@@ -41,6 +44,7 @@ export function TonightPage() {
   const setPicked = (ids: string[]) => setPickedState((savedPicked = ids));
   const setSource = (s: Source) => setSourceState((savedSource = s));
   const setFitOnly = (v: boolean) => setFitOnlyState((savedFitOnly = v));
+  const setTeamCount = (k: number) => setTeamCountState((savedTeamCount = k));
   const toggle = (id: string) => setPicked(picked.includes(id) ? picked.filter((p) => p !== id) : [...picked, id]);
 
   // 나를 먼저, 그다음 이름순
@@ -152,6 +156,108 @@ export function TonightPage() {
           }
         />
       </section>
+
+      {n >= 4 && (
+        <TeamSplits
+          attending={attending}
+          pool={owned}
+          teamCount={teamCount}
+          setTeamCount={setTeamCount}
+          nameOf={nameOf}
+          onOpen={(id) => openModal(<GameDetail gameId={id} />)}
+        />
+      )}
     </div>
+  );
+}
+
+/** 함께하는 사람을 2~3팀으로 나눠 팀마다 아무도 안 해 본 게임을 하나씩 하는 경우의 수 */
+function TeamSplits({
+  attending,
+  pool,
+  teamCount,
+  setTeamCount,
+  nameOf,
+  onOpen,
+}: {
+  attending: Owner[];
+  /** 찾을 범위(보유 게임) */
+  pool: Game[];
+  teamCount: number;
+  setTeamCount: (k: number) => void;
+  nameOf: (o: Owner) => string;
+  onOpen: (id: string) => void;
+}) {
+  const { games, profiles } = useApp();
+  const n = attending.length;
+  // attending·pool은 렌더링마다 새 배열이라, 바뀌었는지는 id 목록과 원본 구독 값으로 본다
+  const idsKey = attending.map((o) => o.id).join();
+  const poolKey = pool.map((g) => g.id).join();
+  const counts = [2, 3].filter((k) => n >= k * 2);
+  const k = counts.includes(teamCount) ? teamCount : 2;
+  const { splits, total } = useMemo(() => {
+    const byId = new Map(profiles.map((p) => [p.id, p]));
+    return splitTeams({
+      ids: attending.map((o) => o.id),
+      games: pool,
+      k,
+      played: (id, g) => !!byId.get(id)?.played?.[g.id],
+      // 팀원이 선호 표시를 많이 한 게임, 평점 순
+      score: (g, team) => team.filter((id) => byId.get(id)?.liked?.[g.id]).length * 10 + (g.rating || 0),
+    });
+  }, [idsKey, poolKey, games, profiles, k]);
+  const ownerOf = new Map(attending.map((o) => [o.id, o]));
+  const tooMany = n > (MAX_PEOPLE[k] ?? 0);
+
+  return (
+    <section className="card">
+      <div className="section-head">
+        <h2 className="section-title">👥 팀 나눠서 하기</h2>
+        {counts.length > 1 && (
+          <div className="seg">
+            {counts.map((c) => (
+              <button key={c} className={k === c ? "on" : ""} onClick={() => setTeamCount(c)}>
+                {c}팀
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+      <p className="muted small">
+        {n}명을 {k}팀으로 나눠, 팀마다 팀원 아무도 안 해 본 게임을 하나씩 하는 경우예요. 고를 수 있는 게임이 많고 인원이 고른 나누기부터
+        보여 줘요. 게임은 위에서 고른 보유 게임 범위 안에서 찾아요.
+      </p>
+      {tooMany ? (
+        <p className="muted small">사람이 너무 많아 {k}팀 경우의 수는 계산하지 않아요.</p>
+      ) : !splits.length ? (
+        <p className="muted small">팀마다 안 해 본 게임이 하나씩 돌아가는 나누기가 없어요. 팀 수나 보유 게임 범위를 바꿔 보세요.</p>
+      ) : (
+        <>
+          <p className="small">
+            가능한 나누기 <b>{total}가지</b>
+            {total > splits.length && ` 중 ${splits.length}가지`}
+          </p>
+          <ol className="split-list">
+            {splits.map((teams, i) => (
+              <li key={i} className="split-item">
+                {teams.map((t, j) => (
+                  <div key={j} className="split-team">
+                    <span className="split-label">{String.fromCharCode(65 + j)}팀</span>
+                    <span className="split-names">{t.ids.map((id) => nameOf(ownerOf.get(id)!)).join(", ")}</span>
+                    <button className="link-btn" onClick={() => onOpen(t.pick.id)}>
+                      🎲 {t.pick.name}
+                    </button>
+                    <span className="muted small">
+                      {players(t.pick)}
+                      {t.options > 1 && ` · 다른 후보 ${t.options - 1}개`}
+                    </span>
+                  </div>
+                ))}
+              </li>
+            ))}
+          </ol>
+        </>
+      )}
+    </section>
   );
 }
