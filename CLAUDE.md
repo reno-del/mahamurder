@@ -10,8 +10,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - GitHub: https://github.com/reno-del/mahamurder (저장소 이름 철자가 프로젝트 ID와 다름).
 - 커밋 작성자 이메일은 `85153521+reno-del@users.noreply.github.com`(레포 `git config user.email`)입니다. GitHub Contributors는 이 이메일로 계정을 찾으므로, 예전 `giwan328@naver.com`(kkk0328 계정으로 잡힘)으로 커밋하지 마세요.
 - 기능 소개 문서: `README.md`(마크다운, mermaid 다이어그램), `feature-overview.html`, `feature-guide.html`(번호 핀 안내서). 셋 다 저장소 루트 `shots/*.png`(데모 모드 화면, 1920×1080)를 쓰므로 Artifact로 올릴 때 `shots/*`를 함께 올리고, 화면이 바뀌면 `npm run dev:demo` 화면을 다시 찍어 바꾼 뒤 핀 위치를 확인하세요.
-- 기획 문서는 `docs/PRD-*.md`에 둡니다. 친구 피드백 PRD(P1 분류·P2 인원 미정·P3 프로필)는 2026-10-28에 모두 반영해 배포했습니다. README·`feature-*.html`·`shots/`는 아직 예전 화면(장르 필터·선호 장르 칩)이라 다시 찍어야 합니다.
-- 테스트와 린트 설정은 없습니다. 검증은 `npm run typecheck`와 브라우저 확인(로그인·쓰기 기능은 `npm run dev:demo`)으로 합니다. 브라우저 패널용 실행 설정은 `.claude/launch.json`의 `dev-demo`(포트 5173)입니다. 데모 모드의 데이터는 브라우저 localStorage(`mm_games`, `mm_users`, `mm_guests`, `mm_events`, `mm_me`)에 있어서, 여러 친구가 필요한 화면은 이 값을 직접 채워 테스트할 수 있습니다.
+- 기획 문서는 `docs/PRD-*.md`에 둡니다. 친구 피드백 PRD(P1 분류·P2 인원 미정·P3 프로필)는 2026-10-28에 모두 반영해 배포했습니다. README·`feature-*.html`·`shots/`는 아직 예전 화면(장르 필터·선호 장르 칩)이고, `/tonight`·안 해 본 게임·친구 기록 창도 빠져 있어 다시 찍어야 합니다.
+- 테스트와 린트 설정은 없습니다. 검증은 `npm run typecheck`와 브라우저 확인(로그인·쓰기 기능은 `npm run dev:demo`)으로 합니다. 브라우저 패널용 실행 설정은 `.claude/launch.json`의 `dev-demo`(포트 5173)입니다. 데모 모드의 데이터는 브라우저 localStorage(`mm_games`, `mm_users`, `mm_guests`, `mm_events`, `mm_me`)에 있어서, 여러 친구가 필요한 화면은 이 값을 직접 채워 테스트할 수 있습니다. `mm_games`·`mm_users`·`mm_guests`·`mm_events`는 배열이 아니라 `{ id: 문서 }` 객체이고, 기본 예시 게임은 4개뿐입니다.
 - 브랜치: `main` 하나만 쓰고 배포도 `main`에서 합니다. 예전 `react-ts` 브랜치는 2026-10-21에 `main`으로 합쳐서 없앴습니다. 이전 버전(빌드 없는 순수 HTML/JS)은 `main` 기록의 커밋 `474506c`에 남아 있습니다.
 - 2026-10-28에 RAG 챗봇(`chatbot/`, Python Firebase 함수 `functions/`, `ChatWidget`)과 Remotion 홍보 영상(`promo/`)을 저장소에서 지웠습니다(커밋 `dc16ae4`, 되살릴 때는 그 이전 기록). Firebase에 배포된 `chat` 함수(asia-northeast3)는 따로 지우기 전까지 남아 있을 수 있습니다.
 
@@ -29,7 +29,7 @@ firebase deploy --only firestore   # firestore.rules / firestore.indexes.json �
 npm run deploy                     # 위 두 명령을 hosting → firestore 순서로 실행
 ```
 
-자동 배포: `main`에 push하면 `.github/workflows/deploy.yml`(GitHub Actions)이 hosting → firestore 순서로 배포합니다(문서·스크린샷·CSV만 바뀐 push는 건너뜀, Actions 탭에서 수동 실행도 가능). 저장소 비밀값 `FIREBASE_SERVICE_ACCOUNT`(서비스 계정 `firebase-adminsdk-fbsvc@mahamuder.iam.gserviceaccount.com`의 키 JSON)는 2026-10-28에 등록했습니다. 다시 등록할 때는 콘솔(프로젝트 설정 → 서비스 계정 → 새 비공개 키)에서 받은 파일 경로를 gitignore된 `.env.secret`에 적고 `node scripts/set-deploy-secret.mjs`를 실행하세요. 기본 역할만으로는 배포가 403으로 실패하므로, 이 계정에 IAM 역할 서비스 사용량 소비자·Firebase 규칙 관리자·Cloud Datastore 색인 관리자를 추가해 두었습니다. 로컬에서 한 번에 배포할 때는 `npm run deploy`(같은 순서)를 씁니다. workflow 파일을 push하려면 `gh` 토큰에 `workflow` 권한이 있어야 합니다(`gh auth refresh -s workflow`).
+자동 배포: `main`에 push하면 `.github/workflows/deploy.yml`(GitHub Actions)이 hosting → firestore 순서로 배포합니다(문서·스크린샷·CSV만 바뀐 push는 건너뜀, Actions 탭에서 수동 실행도 가능). 저장소 비밀값 `FIREBASE_SERVICE_ACCOUNT`(서비스 계정 `firebase-adminsdk-fbsvc@mahamuder.iam.gserviceaccount.com`의 키 JSON)는 2026-10-28에 등록했습니다. 다시 등록할 때는 콘솔(프로젝트 설정 → 서비스 계정 → 새 비공개 키)에서 받은 파일 경로를 gitignore된 `.env.secret`에 적고 `node scripts/set-deploy-secret.mjs`를 실행하세요. 기본 역할만으로는 배포가 403으로 실패하므로, 이 계정에 IAM 역할 서비스 사용량 소비자·Firebase 규칙 관리자·Cloud Datastore 색인 관리자를 추가해 두었습니다. push한 뒤에는 `gh run watch <id> --repo reno-del/mahamurder --exit-status`로 끝날 때까지 기다리고, `gh run view <id> --log`에 `게임 N개를 ... 만들어요`가 찍혔는지 확인하세요. 로컬에서 한 번에 배포할 때는 `npm run deploy`(같은 순서)를 씁니다. workflow 파일을 push하려면 `gh` 토큰에 `workflow` 권한이 있어야 합니다(`gh auth refresh -s workflow`).
 
 배포 순서: hosting을 먼저, 이어서 firestore 규칙을 배포합니다(규칙이 먼저 올라가면 예전 화면의 게임 추가가 실패함). `config/invite` 문서(`code` 필드)가 없으면 새 회원은 가입할 수 없습니다(2026-10-21에 만들어 둠). 회원이 마이페이지 "친구 초대 링크 복사"에서 "초대 코드가 아직 설정되지 않았어요"를 보면 권한 문제가 아니라 이 문서가 없거나 `code`가 빈 것입니다.
 
@@ -40,6 +40,8 @@ npm run deploy                     # 위 두 명령을 hosting → firestore 순
 - GitHub 정보(contributors, 커밋 작성자 계정, Actions 실행 결과 등)는 `gh`로 읽습니다(`gh run list --repo reno-del/mahamurder`).
 - 저장소 루트의 `murder_mystery_games.csv`는 머더미스터리 게임 목록 데이터(보드라이프 기준, 2026-10-21부터 저장소에 포함)입니다. 커밋할 때는 `git add -A` 대신 파일을 지정해서 추가하세요(로컬에만 둔 파일이 섞이지 않게). CSV에 게임을 모으는 것은 `update-mm-games`, 사이트로 옮기는 것은 `import-csv-games` 스킬(게임 목록의 "CSV 가져오기", 변환은 `src/lib/csvGames.ts`)이 맡습니다.
 - PowerShell 5.1에서 `git push`는 진행 메시지를 stderr로 내보내 성공해도 `NativeCommandError`·exit 255처럼 보입니다. `main -> main` 줄이나 `git status -sb`로 성공 여부를 판단하세요.
+- 작업 폴더의 소스 파일은 대부분 CRLF입니다(`core.autocrlf=true`, CLAUDE.md처럼 LF인 파일도 있음). node로 문자열을 바꿀 때는 `\r\n`을 `\n`으로 바꾼 뒤 고치고, 저장할 때 원래 줄바꿈으로 되돌리세요(바꾸지 않으면 diff가 파일 전체로 잡힘).
+- 한글이나 따옴표가 든 커밋 메시지를 PowerShell here-string으로 넘기면 인자가 쪼개집니다. Bash에서 `git commit -F - <<'EOF' … EOF`로 커밋하세요.
 - `ffmpeg`는 설치되어 있지 않습니다. 헤드리스 브라우저가 필요하면 Edge(`C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe`)를 `puppeteer-core`로 띄우면 됩니다.
 - 게임 표지(`img.boardlife.co.kr`)는 다른 사이트에서 불러오는 것을 막아서 localhost나 헤드리스 캡처에서는 이미지가 깨집니다. Node `fetch`로는 정상으로 받아지므로, 캡처할 때는 요청을 가로채 Node에서 받은 이미지로 대신 응답하세요.
 - PATH의 Python은 3.14(`%LOCALAPPDATA%\Python\bin\python.exe`)뿐입니다. 사이트 쪽 일괄 수정 스크립트는 `node`로 작성하세요.
