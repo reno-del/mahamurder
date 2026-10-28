@@ -30,18 +30,20 @@ firebase deploy --only firestore   # firestore.rules / firestore.indexes.json �
 
 챗봇: `chatbot/`(Python RAG, Upstage 임베딩 + Supabase pgvector + OpenAI, 설명은 `chatbot/README.md`)을 사이트 오른쪽 아래 `ChatWidget`(회원에게만 보임)이 `/api/chat`으로 부릅니다. `/api/chat`은 `firebase.json` rewrite로 `functions/main.py`의 Python 함수 `chat`(asia-northeast3, 회원 토큰 확인)에 연결됩니다. 함수는 배포 전 `scripts/sync-chatbot.mjs`가 복사해 온 `chatbot/chat.py`·`chatbot/rag/`를 쓰므로 검색·답변 로직은 `chatbot/`에서 고치세요. 개발 중에는 `.claude/launch.json`의 `functions-emulator`(포트 5001, 비밀값은 gitignore된 `functions/.secret.local`, 에뮬레이터에서는 로그인 검사 생략)를 켜면 Vite가 `/api/chat`을 그쪽으로 넘깁니다. Firebase CLI가 Python 경로의 한글을 깨뜨리므로 functions 에뮬레이터·배포 명령은 `PYTHONUTF8=1`을 켠 셸에서 실행하세요. 함수 배포에는 Blaze 요금제와 `firebase functions:secrets:set`으로 넣은 `OPENAI_API_KEY`·`UPSTAGE_API_KEY`·`SUPABASE_URL`·`SUPABASE_SERVICE_ROLE_KEY`가 필요하고, hosting rewrite가 함수를 가리키므로 함수를 hosting보다 먼저 배포합니다.
 
+자동 배포: `main`에 push하면 `.github/workflows/deploy.yml`(GitHub Actions)이 hosting → firestore 순서로 배포합니다(`promo/`, `chatbot/`, `functions/`, 문서·CSV만 바뀐 push는 건너뜀, Actions 탭에서 수동 실행도 가능). 저장소 비밀값 `FIREBASE_SERVICE_ACCOUNT`(mahamuder 서비스 계정 키 JSON)가 필요하고, 챗봇 함수는 여기서 배포하지 않습니다. 로컬에서 한 번에 배포할 때는 `npm run deploy`(같은 순서)를 씁니다. workflow 파일을 push하려면 `gh` 토큰에 `workflow` 권한이 있어야 합니다(`gh auth refresh -s workflow`).
+
 배포 순서: hosting을 먼저, 이어서 firestore 규칙을 배포합니다(규칙이 먼저 올라가면 예전 화면의 게임 추가가 실패함). `config/invite` 문서(`code` 필드)가 없으면 새 회원은 가입할 수 없습니다(2026-10-21에 만들어 둠). 회원이 마이페이지 "친구 초대 링크 복사"에서 "초대 코드가 아직 설정되지 않았어요"를 보면 권한 문제가 아니라 이 문서가 없거나 `code`가 빈 것입니다.
 
 이 PC 환경에 관한 메모:
-- `git`은 `C:\Program Files\Git\cmd\git.exe`, `firebase`는 `%APPDATA%\npm\firebase.cmd`에 설치되어 있습니다. 설치 전에 열린 셸에서는 PATH에 잡히지 않으므로 전체 경로로 실행하세요.
+- `git`은 `C:\Program Files\Git\cmd\git.exe`, Node 24는 `C:\Program Files\nodejs`(2026-10-28 winget `OpenJS.NodeJS.LTS`로 설치), `firebase`는 `%APPDATA%\npm\firebase.cmd`, `gh`는 `C:\Program Files\GitHub CLI\gh.exe`에 있습니다. 설치 전에 열린 셸에서는 PATH에 잡히지 않으므로 `$env:PATH = "C:\Program Files\nodejs;$env:APPDATA\npm;$env:PATH"`를 앞에 붙이거나 전체 경로로 실행하세요. git push는 `gh` 자격 증명(reno-del)을 씁니다.
 - 샌드박스 셸에서는 Firebase 로그인 정보와 전역 npm 설치가 보이지 않습니다. `npm`, `firebase`, `git push`는 샌드박스 밖에서 실행해야 합니다. 특히 `npm run build`는 Firestore에서 게임 목록을 받아 오므로, 네트워크가 막힌 곳에서 돌리면 경고만 남기고 게임 페이지·게임 목록이 빠진 결과물이 나옵니다. 배포 전 빌드 로그에 `게임 N개를 ... 만들어요`가 찍히는지 확인하세요.
-- `gh` CLI는 설치되어 있지 않습니다. GitHub 정보(contributors, 커밋 작성자 계정 등)는 Node `fetch`로 공개 API(`https://api.github.com/repos/reno-del/mahamurder/...`, `User-Agent` 헤더 필요)를 읽으세요.
+- GitHub 정보(contributors, 커밋 작성자 계정, Actions 실행 결과 등)는 `gh`로 읽습니다(`gh run list --repo reno-del/mahamurder`).
 - 저장소 루트의 `TqYTP92UPNpa7OaoznNJ4w.mp4`(23MB)도 추적하지 않는 파일입니다. 커밋하지 마세요.
 - 저장소 루트의 `murder_mystery_games.csv`는 머더미스터리 게임 목록 데이터(보드라이프 기준, 2026-10-21부터 저장소에 포함)입니다. 커밋할 때는 `git add -A` 대신 파일을 지정해서 추가하세요(위 mp4가 섞이지 않게). CSV에 게임을 모으는 것은 `update-mm-games`, 사이트로 옮기는 것은 `import-csv-games` 스킬(게임 목록의 "CSV 가져오기", 변환은 `src/lib/csvGames.ts`)이 맡습니다.
 - `ffmpeg`는 설치되어 있지 않습니다. 영상 확인은 `promo`에서 `npx remotion ffprobe` / `npx remotion ffmpeg`로 하세요. 헤드리스 브라우저가 필요하면 Edge(`C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe`)를 `puppeteer-core`로 띄우면 됩니다.
 - 게임 표지(`img.boardlife.co.kr`)는 다른 사이트에서 불러오는 것을 막아서 localhost나 헤드리스 캡처에서는 이미지가 깨집니다. Node `fetch`로는 정상으로 받아지므로, 캡처할 때는 요청을 가로채 Node에서 받은 이미지로 대신 응답합니다(`promo/capture.mjs` 참고).
 - Remotion 렌더링과 `promo` 캡처도 네트워크(Chrome Headless Shell 다운로드, 표지 이미지)가 필요하므로 샌드박스 밖에서 실행하세요.
-- PATH의 `python`은 Windows 스토어 연결만 있어 실행되지 않습니다(종료 코드 49). pyenv-win의 `$env:USERPROFILE\.pyenv\pyenv-win\versions\3.11.9\python.exe`와 `chatbot/.venv`는 동작합니다(`pyenv which`는 한글 경로가 깨져 나오므로 이 경로를 직접 쓰세요). 사이트 쪽 일괄 수정 스크립트는 계속 `node`로 작성하세요.
+- 이 PC에는 pyenv와 `chatbot/.venv`가 아직 없고 Python 3.14(`%LOCALAPPDATA%\Python\bin\python.exe`)만 있습니다. 챗봇·functions는 3.11 기준이니 그 작업을 하려면 3.11을 따로 설치해 `.venv`를 만드세요. 사이트 쪽 일괄 수정 스크립트는 계속 `node`로 작성하세요.
 - 챗봇 `ingest.py`는 Supabase 표를 비우고 다시 채웁니다. 도는 중에 질문하면 빈 결과나 statement timeout이 나니, 다른 세션이 ingest 중이 아닌지 먼저 확인하세요.
 - Supabase가 PGRST205(테이블을 못 찾음)를 내면 사용자가 SQL Editor에서 `chatbot/supabase/schema.sql`을 다시 실행해야 합니다(파일 끝의 grant와 `notify pgrst, 'reload schema'`가 그 문제를 고침). `SUPABASE_URL`은 `/rest/v1/`이 붙어 있어도 코드가 떼어 냅니다.
 - LangChain `SupabaseVectorStore`의 `postgrest_filter`는 supabase 2.33과 맞지 않아(`.params` 없음 오류) `rag/store.py`의 `search()`가 매칭 함수를 직접 부릅니다. 이 경로로 되돌리지 마세요.

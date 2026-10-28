@@ -8,7 +8,8 @@
     "dev:demo": "vite --mode demo",
     "build": "tsc && vite build",
     "typecheck": "tsc",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "deploy": "firebase deploy --only hosting && firebase deploy --only firestore"
   },
   "dependencies": {
     "firebase": "10.14.1",
