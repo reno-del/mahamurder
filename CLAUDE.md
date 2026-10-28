@@ -28,15 +28,17 @@ firebase deploy --only firestore   # firestore.rules / firestore.indexes.json �
 npm run deploy                     # 위 두 명령을 hosting → firestore 순서로 실행
 ```
 
-자동 배포: `main`에 push하면 `.github/workflows/deploy.yml`(GitHub Actions)이 hosting → firestore 순서로 배포합니다(문서·스크린샷·CSV만 바뀐 push는 건너뜀, Actions 탭에서 수동 실행도 가능). 저장소 비밀값 `FIREBASE_SERVICE_ACCOUNT`(mahamuder 서비스 계정 키 JSON)가 필요하고, 로컬에서 한 번에 배포할 때는 `npm run deploy`(같은 순서)를 씁니다. workflow 파일을 push하려면 `gh` 토큰에 `workflow` 권한이 있어야 합니다(`gh auth refresh -s workflow`).
+자동 배포: `main`에 push하면 `.github/workflows/deploy.yml`(GitHub Actions)이 hosting → firestore 순서로 배포합니다(문서·스크린샷·CSV만 바뀐 push는 건너뜀, Actions 탭에서 수동 실행도 가능). 저장소 비밀값 `FIREBASE_SERVICE_ACCOUNT`(서비스 계정 `firebase-adminsdk-fbsvc@mahamuder.iam.gserviceaccount.com`의 키 JSON)는 2026-10-28에 등록했습니다. 다시 등록할 때는 콘솔(프로젝트 설정 → 서비스 계정 → 새 비공개 키)에서 받은 파일 경로를 gitignore된 `.env.secret`에 적고 `node scripts/set-deploy-secret.mjs`를 실행하세요. 기본 역할만으로는 배포가 403으로 실패하므로, 이 계정에 IAM 역할 서비스 사용량 소비자·Firebase 규칙 관리자·Cloud Datastore 색인 관리자를 추가해 두었습니다. 로컬에서 한 번에 배포할 때는 `npm run deploy`(같은 순서)를 씁니다. workflow 파일을 push하려면 `gh` 토큰에 `workflow` 권한이 있어야 합니다(`gh auth refresh -s workflow`).
 
 배포 순서: hosting을 먼저, 이어서 firestore 규칙을 배포합니다(규칙이 먼저 올라가면 예전 화면의 게임 추가가 실패함). `config/invite` 문서(`code` 필드)가 없으면 새 회원은 가입할 수 없습니다(2026-10-21에 만들어 둠). 회원이 마이페이지 "친구 초대 링크 복사"에서 "초대 코드가 아직 설정되지 않았어요"를 보면 권한 문제가 아니라 이 문서가 없거나 `code`가 빈 것입니다.
 
 이 PC 환경에 관한 메모:
-- `git`은 `C:\Program Files\Git\cmd\git.exe`, Node 24는 `C:\Program Files\nodejs`(2026-10-28 winget `OpenJS.NodeJS.LTS`로 설치), `firebase`는 `%APPDATA%\npm\firebase.cmd`, `gh`는 `C:\Program Files\GitHub CLI\gh.exe`에 있습니다. 설치 전에 열린 셸에서는 PATH에 잡히지 않으므로 `$env:PATH = "C:\Program Files\nodejs;$env:APPDATA\npm;$env:PATH"`를 앞에 붙이거나 전체 경로로 실행하세요. git push는 `gh` 자격 증명(reno-del)을 씁니다. Firebase CLI는 이 PC에서 아직 `firebase login`을 하지 않았을 수 있으니(`firebase login:list`로 확인) 배포 전에 확인하세요.
+- `git`은 `C:\Program Files\Git\cmd\git.exe`, Node 24는 `C:\Program Files\nodejs`(2026-10-28 winget `OpenJS.NodeJS.LTS`로 설치), `gh`는 `C:\Program Files\GitHub CLI\gh.exe`에 있습니다. 설치 전에 열린 셸에서는 PATH에 잡히지 않으므로 `$env:PATH = "C:\Program Files\nodejs;$env:APPDATA\npm;$env:PATH"`를 앞에 붙이거나 전체 경로로 실행하세요. git push는 `gh` 자격 증명(reno-del, `workflow` 권한 포함)을 씁니다.
+- Firebase CLI(15.34.1)는 Claude 앱 전용 AppData(`C:\Users\admin\AppData\Local\Packages\Claude_pzs8sxrjxfjjc\LocalCache\Roaming\npm\firebase.cmd`)에 설치되어 있습니다. Claude 셸에서는 `%APPDATA%\npm`으로 보이지만 사용자 터미널 패널(`run_in_terminal`)에서는 보이지 않으니 전체 경로로 실행하세요. `gh` 로그인도 터미널 패널에서는 보이지 않으므로, `gh auth refresh`처럼 브라우저 승인이 필요한 명령은 Claude 셸에서 백그라운드로 실행해 출력된 코드를 사용자에게 전달하세요. `firebase login`은 2026-10-28에 `somanbg@gmail.com`(mahamuder 소유자)으로 했고, 로그인 정보는 `~/.config/configstore`에 있어 양쪽에서 함께 쓰입니다.
 - 샌드박스 셸에서는 Firebase 로그인 정보와 전역 npm 설치가 보이지 않습니다. `npm`, `firebase`, `git push`는 샌드박스 밖에서 실행해야 합니다. 특히 `npm run build`는 Firestore에서 게임 목록을 받아 오므로, 네트워크가 막힌 곳에서 돌리면 경고만 남기고 게임 페이지·게임 목록이 빠진 결과물이 나옵니다. 배포 전 빌드 로그에 `게임 N개를 ... 만들어요`가 찍히는지 확인하세요.
 - GitHub 정보(contributors, 커밋 작성자 계정, Actions 실행 결과 등)는 `gh`로 읽습니다(`gh run list --repo reno-del/mahamurder`).
 - 저장소 루트의 `murder_mystery_games.csv`는 머더미스터리 게임 목록 데이터(보드라이프 기준, 2026-10-21부터 저장소에 포함)입니다. 커밋할 때는 `git add -A` 대신 파일을 지정해서 추가하세요(로컬에만 둔 파일이 섞이지 않게). CSV에 게임을 모으는 것은 `update-mm-games`, 사이트로 옮기는 것은 `import-csv-games` 스킬(게임 목록의 "CSV 가져오기", 변환은 `src/lib/csvGames.ts`)이 맡습니다.
+- PowerShell 5.1에서 `git push`는 진행 메시지를 stderr로 내보내 성공해도 `NativeCommandError`·exit 255처럼 보입니다. `main -> main` 줄이나 `git status -sb`로 성공 여부를 판단하세요.
 - `ffmpeg`는 설치되어 있지 않습니다. 헤드리스 브라우저가 필요하면 Edge(`C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe`)를 `puppeteer-core`로 띄우면 됩니다.
 - 게임 표지(`img.boardlife.co.kr`)는 다른 사이트에서 불러오는 것을 막아서 localhost나 헤드리스 캡처에서는 이미지가 깨집니다. Node `fetch`로는 정상으로 받아지므로, 캡처할 때는 요청을 가로채 Node에서 받은 이미지로 대신 응답하세요.
 - PATH의 Python은 3.14(`%LOCALAPPDATA%\Python\bin\python.exe`)뿐입니다. 사이트 쪽 일괄 수정 스크립트는 `node`로 작성하세요.
