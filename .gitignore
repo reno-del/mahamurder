@@ -8,3 +8,5 @@ dist/
 !.claude/skills/import-csv-games/
 !.claude/skills/update-mm-games/
 skills-lock.json
+.env.secret
+*-firebase-adminsdk-*.json
