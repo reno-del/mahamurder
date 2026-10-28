@@ -100,7 +100,7 @@ function GameCard({ game: g, onOpen }: { game: Game; onOpen: () => void }) {
           </div>
           <div>
             <dt>인원</dt>
-            <dd>{players(g)}</dd>
+            <dd>{g.minPlayers ? players(g) : <span className="badge badge-unofficial">인원 미정</span>}</dd>
           </div>
           <div>
             <dt>시간</dt>
@@ -164,7 +164,16 @@ export function GamesPage() {
   }, [gameId, hasCurrent, loaded]);
 
   const q = filter.q.trim().toLowerCase();
-  const size = Number(filter.size);
+  // 인원을 고르면 인원 미정 게임은 뺀다. "none"은 미정 게임만, "10+"는 10명 이상 할 수 있는 게임
+  const fitsSize = (g: Game) => {
+    if (!filter.size) return true;
+    if (filter.size === "none") return !g.minPlayers;
+    if (!g.minPlayers) return false;
+    const max = g.maxPlayers || g.minPlayers;
+    if (filter.size === "10+") return max >= 10;
+    const size = Number(filter.size);
+    return g.minPlayers <= size && size <= max;
+  };
   const sorters: Record<SortKey, (a: Game, b: Game) => number> = {
     rating: (a, b) => (b.rating || 0) - (a.rating || 0),
     release: (a, b) => String(b.releaseDate || "").localeCompare(String(a.releaseDate || "")),
@@ -177,7 +186,7 @@ export function GamesPage() {
       (g) =>
         (!q || [g.name, g.publisher, g.description, ...(g.genres || [])].join(" ").toLowerCase().includes(q)) &&
         (!filter.genre || (g.genres || []).includes(filter.genre)) &&
-        (!size || ((g.minPlayers || 0) <= size && size <= (g.maxPlayers || g.minPlayers || 99))) &&
+        fitsSize(g) &&
         (!filter.owned || ownersOf(g.id).length > 0 === (filter.owned === "yes")) &&
         (!filter.localized || (g.localized !== false) === (filter.localized === "yes"))
     )
@@ -216,6 +225,8 @@ export function GamesPage() {
               {n}명이서
             </option>
           ))}
+          <option value="10+">10명 이상</option>
+          <option value="none">인원 미정</option>
         </select>
         <select className="input" value={filter.owned} onChange={(e) => set("owned", e.target.value as Filter["owned"])}>
           <option value="">구비 전체</option>
