@@ -10,6 +10,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - GitHub: https://github.com/reno-del/mahamurder (저장소 이름 철자가 프로젝트 ID와 다름).
 - 커밋 작성자 이메일은 `85153521+reno-del@users.noreply.github.com`(레포 `git config user.email`)입니다. GitHub Contributors는 이 이메일로 계정을 찾으므로, 예전 `giwan328@naver.com`(kkk0328 계정으로 잡힘)으로 커밋하지 마세요.
 - 기능 소개 문서: `README.md`(마크다운, mermaid 다이어그램), `feature-overview.html`, `feature-guide.html`(번호 핀 안내서). 셋 다 저장소 루트 `shots/*.png`(데모 모드 화면, 1920×1080)를 쓰므로 Artifact로 올릴 때 `shots/*`를 함께 올리고, 화면이 바뀌면 `npm run dev:demo` 화면을 다시 찍어 바꾼 뒤 핀 위치를 확인하세요.
+- 기획 문서는 `docs/PRD-*.md`에 둡니다. 친구 피드백 PRD(P1 분류·P2 인원 미정·P3 프로필)는 2026-10-28에 모두 반영해 배포했습니다. README·`feature-*.html`·`shots/`는 아직 예전 화면(장르 필터·선호 장르 칩)이라 다시 찍어야 합니다.
 - 테스트와 린트 설정은 없습니다. 검증은 `npm run typecheck`와 브라우저 확인(로그인·쓰기 기능은 `npm run dev:demo`)으로 합니다. 브라우저 패널용 실행 설정은 `.claude/launch.json`의 `dev-demo`(포트 5173)입니다. 데모 모드의 데이터는 브라우저 localStorage(`mm_games`, `mm_users`, `mm_guests`, `mm_events`, `mm_me`)에 있어서, 여러 친구가 필요한 화면은 이 값을 직접 채워 테스트할 수 있습니다.
 - 브랜치: `main` 하나만 쓰고 배포도 `main`에서 합니다. 예전 `react-ts` 브랜치는 2026-10-21에 `main`으로 합쳐서 없앴습니다. 이전 버전(빌드 없는 순수 HTML/JS)은 `main` 기록의 커밋 `474506c`에 남아 있습니다.
 - 2026-10-28에 RAG 챗봇(`chatbot/`, Python Firebase 함수 `functions/`, `ChatWidget`)과 Remotion 홍보 영상(`promo/`)을 저장소에서 지웠습니다(커밋 `dc16ae4`, 되살릴 때는 그 이전 기록). Firebase에 배포된 `chat` 함수(asia-northeast3)는 따로 지우기 전까지 남아 있을 수 있습니다.
@@ -43,9 +44,11 @@ npm run deploy                     # 위 두 명령을 hosting → firestore 순
 - 게임 표지(`img.boardlife.co.kr`)는 다른 사이트에서 불러오는 것을 막아서 localhost나 헤드리스 캡처에서는 이미지가 깨집니다. Node `fetch`로는 정상으로 받아지므로, 캡처할 때는 요청을 가로채 Node에서 받은 이미지로 대신 응답하세요.
 - PATH의 Python은 3.14(`%LOCALAPPDATA%\Python\bin\python.exe`)뿐입니다. 사이트 쪽 일괄 수정 스크립트는 `node`로 작성하세요.
 - 모드별 env 값은 `node -e "import('vite').then(v=>console.log(v.loadEnv('demo','.','VITE_')))"`로 확인합니다(`.env`는 모든 모드에서 읽히고 `.env.demo`가 그 위에 덧씌워짐).
-- Node 24는 `.ts` 파일을 바로 import할 수 있어(`import type`만 쓰면) `src/lib`의 순수 모듈을 node 스크립트로 시험할 수 있습니다. skill-creator의 python 스크립트(`generate_review.py` 등)는 돌지 않으니 node로 옮겨 씁니다.
+- Node 24는 `.ts` 파일을 바로 import할 수 있지만, 다른 모듈을 확장자 없이 값으로 불러오는 파일(`csvGames.ts`·`seo.ts`는 `./category`를 불러옴)은 `ERR_MODULE_NOT_FOUND`가 납니다. `import type`만 쓰는 파일(`category.ts` 등)만 node 스크립트에서 바로 불러오세요. 경로는 `file:///C:/...` URL로 줍니다. skill-creator의 python 스크립트(`generate_review.py` 등)는 돌지 않으니 node로 옮겨 씁니다.
 - `isolation: "worktree"` 서브에이전트의 작업 폴더는 로컬 `main`이 아니라 `origin/main`에서 만들어집니다. push하지 않은 커밋이 필요하면 먼저 push하거나 그 차이를 감안하세요.
 - Firebase CLI 로그인 정보로 Firestore REST에 직접 쓰는 것은 auto mode 권한 검사가 막습니다. `config/*`처럼 콘솔에서만 바꾸는 데이터는 Claude in Chrome으로 Firebase 콘솔(사용자 로그인됨)에서 고치세요. 없는 문서 경로에서 "필드 추가"는 저장되지 않으니, 컬렉션의 "문서 추가"에서 문서 ID를 직접 입력하세요.
+- 실제 사이트의 게임·프로필 데이터를 회원 권한으로 한꺼번에 고칠 때는 Claude in Chrome(사용자가 회원으로 로그인됨)에서 mahamuder.web.app을 엽니다. 그다음 `javascript_tool`로 `https://www.gstatic.com/firebasejs/10.14.1/`의 app·auth·firestore를 import하고, `.env` 설정으로 **이름 없는(기본) 앱**을 `initializeApp`한 뒤 `auth.authStateReady()`를 기다려 `updateDoc`을 씁니다. 이름 붙인 앱은 저장된 로그인을 읽지 못합니다. 규칙이 그대로 적용되므로 `editableFields()` 밖의 필드는 실패합니다. 내장 브라우저는 사이트에 로그인되어 있지 않습니다.
+- 보드라이프(`boardlife.co.kr/game/<id>`)는 2026-10-28부터 Node `fetch`에 403을 돌려줍니다(`update-mm-games`의 `boardlifeDetail`도 실패). 내장 브라우저로 boardlife.co.kr을 연 뒤 페이지 안에서 `fetch('/game/<id>')`로 받아 같은 정규식으로 읽으세요. 머미나우·텀블벅은 Node에서 그대로 받아집니다.
 - Java가 없어 Firestore 에뮬레이터를 쓸 수 없습니다. 규칙 문법은 `firebase deploy --only firestore:rules --dry-run`(샌드박스 밖)으로 컴파일만 확인합니다. 규칙에 검증을 추가하기 전에는 공개 REST(`https://firestore.googleapis.com/v1/projects/mahamuder/databases/(default)/documents/games?pageSize=300`)를 Node `fetch`로 읽어 기존 문서가 조건을 통과하는지 확인하세요.
 - 파일 전체를 셸로 다시 쓰면 Vite 개발 서버가 쓰는 도중의 빈 파일을 캐시할 수 있습니다. 콘솔에 `does not provide an export named` 오류가 뜨면 `dev-demo` 미리 보기를 껐다 켜세요.
 - 데모 모드를 브라우저 패널에서 테스트할 때는 `prompt()`/`confirm()` 창이 자동화를 멈춥니다. 먼저 JS로 `window.prompt = () => "탐정"; window.confirm = () => true`를 넣은 뒤 버튼을 누르세요. 파일 입력은 JS로 `DataTransfer`에 `File`을 넣고 `change`를 보내면 되고(Vite 개발 서버는 저장소 루트 파일을 `/murder_mystery_games.csv`처럼 내줌), 실제 사이트에서는 Claude in Chrome의 `file_upload`로 로컬 파일을 올릴 수 있습니다.
