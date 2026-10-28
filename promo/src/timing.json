@@ -1,9 +1,0 @@
-{
-  "fps": 30,
-  "total": 870,
-  "intro": { "from": 0, "dur": 120, "line1": "오늘 밤,", "line2": "누가 범인일까?", "line1Start": 12, "line2Start": 46, "perChar": 4, "glitch": 92 },
-  "board": { "from": 120, "dur": 90 },
-  "features": { "from": 210, "dur": 135, "count": 4 },
-  "outro": { "from": 750, "dur": 120 },
-  "cuts": [120, 210, 345, 480, 615, 750]
-}

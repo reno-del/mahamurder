@@ -18,24 +18,6 @@
       "runtimeExecutable": "cmd",
       "runtimeArgs": ["/c", "%APPDATA%\\npm\\firebase.cmd", "serve", "--only", "hosting", "--port", "5000"],
       "port": 5000
-    },
-    {
-      "name": "chatbot",
-      "runtimeExecutable": "cmd",
-      "runtimeArgs": ["/c", "cd chatbot && .venv\\Scripts\\streamlit.exe run app.py --server.port 8501 --server.headless true"],
-      "port": 8501
-    },
-    {
-      "name": "functions-emulator",
-      "runtimeExecutable": "cmd",
-      "runtimeArgs": ["/c", "set PYTHONUTF8=1&& node scripts/sync-chatbot.mjs && %APPDATA%\\npm\\firebase.cmd emulators:start --only functions"],
-      "port": 5001
-    },
-    {
-      "name": "chatbot-8502",
-      "runtimeExecutable": "cmd",
-      "runtimeArgs": ["/c", "cd chatbot && .venv\\Scripts\\streamlit.exe run app.py --server.port 8502 --server.headless true"],
-      "port": 8502
     }
   ]
 }

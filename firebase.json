@@ -6,7 +6,6 @@
     "cleanUrls": true,
     "trailingSlash": false,
     "rewrites": [
-      { "source": "/api/chat", "function": { "functionId": "chat", "region": "asia-northeast3" } },
       { "source": "**", "destination": "/index.html" }
     ],
     "headers": [
@@ -16,15 +15,6 @@
       }
     ]
   },
-  "functions": [
-    {
-      "source": "functions",
-      "codebase": "chatbot",
-      "runtime": "python311",
-      "predeploy": ["node scripts/sync-chatbot.mjs"],
-      "ignore": ["venv", "__pycache__", ".secret.local", "*.local"]
-    }
-  ],
   "firestore": {
     "rules": "firestore.rules",
     "indexes": "firestore.indexes.json"

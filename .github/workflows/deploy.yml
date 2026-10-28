@@ -1,6 +1,5 @@
 # main에 push하면 사이트(hosting)와 Firestore 규칙을 배포한다.
 # 순서는 CLAUDE.md대로 hosting 먼저, 그다음 firestore.
-# 챗봇 함수(functions)는 Python·비밀값이 필요해서 여기서 배포하지 않는다.
 # 필요한 저장소 비밀값: FIREBASE_SERVICE_ACCOUNT (mahamuder 서비스 계정 키 JSON 전체)
 name: Deploy
 
@@ -8,9 +7,7 @@ on:
   push:
     branches: [main]
     paths-ignore:
-      - "promo/**"
-      - "chatbot/**"
-      - "functions/**"
+      - "shots/**"
       - "**.md"
       - "feature-*.html"
       - "murder_mystery_games.csv"

@@ -4,7 +4,7 @@
 
 **사이트:** https://mahamuder.web.app
 
-![게임 소개 화면](promo/public/shots/games.png)
+![게임 소개 화면](shots/games.png)
 
 ## 모임 한 번이 흘러가는 길
 
@@ -33,7 +33,7 @@ flowchart LR
 
 게임마다 주소가 있어서 링크를 보내면 이 창이 바로 열립니다.
 
-![게임 상세 화면](promo/public/shots/detail.png)
+![게임 상세 화면](shots/detail.png)
 
 - 외부 평가와 친구 평균 평점, 클럽 안에서 몇 명이 가지고 있는지
 - **플레이함 · 하고 싶어요 · 보유** 버튼으로 내 기록 남기기, 별 다섯 개로 내 평점 매기기
@@ -46,7 +46,7 @@ flowchart LR
 
 달력에서 날짜를 눌러 "이 날 이 게임 할 사람!" 공지를 올립니다.
 
-![일정 모집 화면](promo/public/shots/schedule.png)
+![일정 모집 화면](shots/schedule.png)
 
 - 공지마다 D-day, 날짜·시간, 게임, 장소, 주최자, 메모(준비물·회비 등)
 - 모집 상태: "N명 더 필요", 최소 인원을 넘으면 "진행 확정 · 추가 모집", 꽉 차면 "모집 완료"
@@ -60,7 +60,7 @@ flowchart LR
 
 누가 어떤 게임을 가졌고 지금 누가 빌려 갔는지 한눈에 봅니다.
 
-![보유 게임 화면](promo/public/shots/library.png)
+![보유 게임 화면](shots/library.png)
 
 - 요약: 보유 게임 · 대여 가능 · 대여 중 · 내가 빌린 게임 수
 - 대여 중 목록: 게임, 주인, 빌린 사람, 대여일과 며칠째인지. 빌린 사람은 **반납하기**, 주인은 **돌려받음**
@@ -82,7 +82,7 @@ stateDiagram-v2
 
 내 기록과 취향을 모아 두면 아직 안 해 본 게임을 골라 추천해 줍니다.
 
-![마이페이지 화면](promo/public/shots/mypage.png)
+![마이페이지 화면](shots/mypage.png)
 
 - 닉네임(사이트 전체에서 Google 이름 대신 표시)과 한마디
 - 플레이한 게임 수, 선호 게임, 내 평균 평점, 참여 예정 모임
