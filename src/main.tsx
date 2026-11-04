@@ -16,6 +16,11 @@ import "./styles/style.css";
 // 카톡방 등에 공유된 옛 링크가 계속 동작하도록 렌더링 전에 처리한다
 if (location.hash.startsWith("#/")) history.replaceState(null, "", location.hash.slice(1));
 
+// 홈 화면 설치(PWA)용. 개발 서버에서는 HMR과 엉키므로 배포 빌드에서만 등록한다 (public/sw.js)
+if (import.meta.env.PROD && "serviceWorker" in navigator) {
+  window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
+}
+
 function ScrollToTop() {
   const { pathname } = useLocation();
   useEffect(() => {

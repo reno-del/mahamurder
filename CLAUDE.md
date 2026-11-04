@@ -87,6 +87,8 @@ npm run deploy                     # hosting → firestore
 
 **Web Worker**: 무거운 계산은 `lib/*.worker.ts`(`new Worker(new URL("…", import.meta.url), { type: "module" })`). 데이터만 넘기고(`SplitInput`), effect 정리에서 `terminate()`.
 
+**PWA**: `public/manifest.webmanifest`·아이콘(`icon.svg`에서 Edge 헤드리스로 PNG 렌더)·`public/sw.js`. SW는 배포 빌드에서만 등록(`main.tsx`), 화면은 네트워크 우선(오프라인만 저장본), `/assets/*`만 캐시 우선, `/__/`(로그인)·외부 요청은 안 건드림. `build-preview`로 확인한 뒤엔 그 탭에서 SW 등록 해제.
+
 **스타일**: 전역 `src/styles/style.css` 하나. 옛 클래스(`card`, `btn btn-primary`, `modal`, `cal-day` 등)를 재사용.
 
 **SEO** (`seo/plugin.ts`, `src/lib/seo.ts`, `src/data/site.ts`): AI 크롤러는 JS를 안 돌리므로 빌드 때 Firestore 공개 REST로 게임 목록을 읽어
