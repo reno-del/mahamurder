@@ -9,7 +9,7 @@ import { showError, toast } from "../../lib/toast";
 import { cleanName, displayName, players, playTime, prettyDate, ymd } from "../../lib/format";
 import { GameDetail } from "../games/GameDetail";
 import { GameTiles } from "../../components/GameTiles";
-import { FriendGames } from "./FriendGames";
+import { FriendGames, type FriendTab } from "./FriendGames";
 import { usePageMeta } from "../../lib/usePageMeta";
 import { categoryName, categoryOf } from "../../lib/category";
 import type { Game, Profile } from "../../types";
@@ -255,7 +255,7 @@ function Checklist({ me, tab, onOpen }: { me: Profile; tab: Tab; onOpen: (id: st
   );
 }
 
-function Friends({ onOpenFriend }: { onOpenFriend: (id: string) => void }) {
+function Friends({ onOpenFriend }: { onOpenFriend: (id: string, tab?: FriendTab) => void }) {
   const { user, profiles, games } = useApp();
   const others = profiles.filter((p) => p.id !== user?.uid);
   if (!others.length) return <p className="muted small">아직 다른 친구가 없어요. 사이트 주소를 공유해 보세요!</p>;
@@ -282,8 +282,16 @@ function Friends({ onOpenFriend }: { onOpenFriend: (id: string) => void }) {
                     {displayName(p) || "익명"}
                   </button>
                 </td>
-                <td>{playedCount}개</td>
-                <td>{games.filter((g) => p.liked?.[g.id]).length}개</td>
+                <td>
+                  <button className="link-btn" title="플레이한 게임 보기" onClick={() => onOpenFriend(p.id, "played")}>
+                    {playedCount}개
+                  </button>
+                </td>
+                <td>
+                  <button className="link-btn" title="위시리스트 보기" onClick={() => onOpenFriend(p.id, "wish")}>
+                    {games.filter((g) => p.liked?.[g.id]).length}개
+                  </button>
+                </td>
                 <td>{Object.keys(p.owned || {}).filter((id) => games.some((g) => g.id === id)).length}개</td>
                 <td>{p.prefNote || "-"}</td>
                 <td className="muted">{p.bio || ""}</td>
@@ -307,6 +315,7 @@ export function MyPage() {
   if (!user || !me) return <LoginRequired title="🕵️ 탐정 수첩" message="로그인하면 플레이한 게임과 취향을 기록할 수 있어요." />;
 
   const openDetail = (id: string) => openModal(<GameDetail gameId={id} />);
+  const openFriend = (id: string, tab?: FriendTab) => openModal(<FriendGames profileId={id} initialTab={tab} />);
   const setField = (path: string, value: unknown) => store.setProfileField(user.uid, path, value).catch(showError);
   // 회원만 초대 코드를 읽을 수 있다 (config/invite, 관리자가 Firebase 콘솔에서 만듦)
   const copyInvite = async () => {
@@ -346,17 +355,17 @@ export function MyPage() {
           <ProfileForm key={`${user.uid}:${profileLoaded}`} me={me} />
         </div>
         <div className="stats">
-          <div className="stat">
+          <button className="stat stat-btn" title="플레이한 게임 보기" onClick={() => openFriend(user.uid, "played")}>
             <b>
               {playedIds.length}
               <small>/{games.length}</small>
             </b>
             <span>플레이한 게임</span>
-          </div>
-          <div className="stat">
+          </button>
+          <button className="stat stat-btn" title="위시리스트 보기" onClick={() => openFriend(user.uid, "wish")}>
             <b>{likedIds.length}</b>
             <span>선호 게임</span>
-          </div>
+          </button>
           <div className="stat">
             <b>{myRatings.length ? (myRatings.reduce((a, b) => a + b, 0) / myRatings.length).toFixed(1) : "-"}</b>
             <span>내 평균 평점</span>
@@ -430,7 +439,7 @@ export function MyPage() {
           </button>
         </div>
         <p className="muted small">친구 이름을 누르면 그 친구가 해 본 게임과 위시리스트(♡ 하고 싶어요)를 볼 수 있어요.</p>
-        <Friends onOpenFriend={(id) => openModal(<FriendGames profileId={id} />)} />
+        <Friends onOpenFriend={openFriend} />
       </section>
     </div>
   );

@@ -5,16 +5,17 @@ import { GameTiles } from "../../components/GameTiles";
 import { cleanName, displayName, players } from "../../lib/format";
 import { GameDetail } from "../games/GameDetail";
 
-type Tab = "wish" | "played" | "both";
+export type FriendTab = "wish" | "played" | "both";
+type Tab = FriendTab;
 
 /**
  * 친구 한 명이 해 본 게임과 위시리스트(♡ 하고 싶어요)를 표지와 함께 보여 주는 창.
  * "둘 다 안 해봄"은 나와 그 친구 모두 안 해 본 게임이라 같이 할 게임을 고를 때 쓴다.
  */
-export function FriendGames({ profileId }: { profileId: string }) {
+export function FriendGames({ profileId, initialTab = "wish" }: { profileId: string; initialTab?: Tab }) {
   const { user, me, games, profiles } = useApp();
   const { openModal } = useModal();
-  const [tab, setTab] = useState<Tab>("wish");
+  const [tab, setTab] = useState<Tab>(initialTab);
   const friend = profiles.find((p) => p.id === profileId);
   if (!friend) return <p className="muted">이 친구를 찾을 수 없어요.</p>;
 

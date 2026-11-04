@@ -297,6 +297,10 @@ textarea.input { resize: vertical; }
 .form label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); font-weight: 500; }
 .form .full { grid-column: 1 / -1; }
 .form p { margin: 0; }
+.form .field-label { font-size: 13px; color: var(--muted); font-weight: 500; margin-bottom: 4px; }
+.form .picker-tools { margin-top: 0; }
+.picked-game { display: flex; align-items: center; gap: 12px; padding: 8px; background: var(--surface-2); border-radius: 12px; }
+.picked-info { flex: 1; min-width: 0; }
 .form-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
 
 /* ---------- 마이페이지 ---------- */
@@ -308,6 +312,8 @@ textarea.input { resize: vertical; }
 .stat b { display: block; font-size: 26px; font-family: "Noto Serif KR", serif; }
 .stat small { font-size: 14px; color: var(--muted); }
 .stat span { font-size: 13px; color: var(--muted); }
+.stat-btn { font: inherit; color: inherit; border: 2px solid transparent; cursor: pointer; }
+.stat-btn:hover { border-color: var(--accent); }
 .stat-wide { grid-column: 1 / -1; font-size: 14px; }
 .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
 .chip {

@@ -5,7 +5,89 @@ import { useModal } from "../../components/Modal";
 import { showError, toast } from "../../lib/toast";
 import { cleanName, displayName, players, ymd } from "../../lib/format";
 import { setMonthView } from "../../lib/calendarView";
-import type { EventFields, GameEvent } from "../../types";
+import { Cover } from "../../components/Cover";
+import { categoryName, categoryOf } from "../../lib/category";
+import type { EventFields, Game, GameEvent } from "../../types";
+
+type Show = "owned" | "mine" | "all";
+
+/**
+ * 모집할 게임을 표지로 골라 주는 격자. 기본은 회원·미등록 친구 누군가가 가진 게임만 보여 준다.
+ * 폼 안에 있으므로 버튼은 모두 type="button"이고, 검색칸에서 Enter를 눌러도 제출되지 않게 막는다.
+ */
+function EventGamePicker({ games, selected, onPick }: { games: Game[]; selected: string; onPick: (id: string) => void }) {
+  const { user } = useApp();
+  const { ownersOf } = useGameHelpers();
+  const [q, setQ] = useState("");
+  const [show, setShow] = useState<Show>("owned");
+
+  const query = q.trim().toLowerCase();
+  const counts: Record<Show, number> = { owned: 0, mine: 0, all: games.length };
+  const list = games.filter((g) => {
+    const owners = ownersOf(g.id);
+    const mine = owners.some((o) => o.id === user?.uid);
+    if (owners.length) counts.owned++;
+    if (mine) counts.mine++;
+    if (show === "owned" && !owners.length) return false;
+    if (show === "mine" && !mine) return false;
+    return !query || [g.name, g.publisher, categoryName(categoryOf(g))].join(" ").toLowerCase().includes(query);
+  });
+  const tabs: [Show, string][] = [
+    ["owned", `보유 게임 ${counts.owned}`],
+    ["mine", `내 게임 ${counts.mine}`],
+    ["all", `전체 ${counts.all}`],
+  ];
+
+  return (
+    <>
+      <div className="picker-tools">
+        <input
+          className="input"
+          type="search"
+          placeholder="게임 이름, 분류, 제작사 검색"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && e.preventDefault()}
+          autoFocus
+        />
+        <div className="seg">
+          {tabs.map(([s, label]) => (
+            <button type="button" key={s} className={show === s ? "on" : ""} onClick={() => setShow(s)}>
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+      {list.length ? (
+        <div className="picker-grid">
+          {list.map((g) => {
+            const owners = ownersOf(g.id);
+            const on = g.id === selected;
+            return (
+              <button type="button" key={g.id} className={`picker-item ${on ? "on" : ""}`} aria-pressed={on} onClick={() => onPick(g.id)}>
+                <Cover game={g} className="picker-cover" />
+                {on && <span className="picker-check">✔</span>}
+                <span className="picker-name">{g.name}</span>
+                <span className="tile-sub">
+                  {players(g)}
+                  {owners.length > 0 && (
+                    <>
+                      <br />📦 {owners.map((o) => (o.id === user?.uid ? "나" : o.name)).join(", ")}
+                    </>
+                  )}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      ) : (
+        <p className="muted small picker-empty">
+          {show === "all" || query ? "조건에 맞는 게임이 없어요." : "보유 게임이 없어요. '전체'에서 골라 보세요."}
+        </p>
+      )}
+    </>
+  );
+}
 
 interface Props {
   event?: GameEvent; // 있으면 수정
@@ -15,12 +97,13 @@ interface Props {
 
 export function EventForm({ event, date, gameId }: Props) {
   const { user, me, games, profiles } = useApp();
-  const { gameById } = useGameHelpers();
+  const { gameById, ownersOf } = useGameHelpers();
   const myName = useMyName();
   const { closeModal } = useModal();
 
   const initialGame = gameById(event?.gameId || gameId);
   const [gid, setGid] = useState(initialGame?.id || "");
+  const [picking, setPicking] = useState(!initialGame);
   // 새 공지는 게임의 인원으로 기본값을 채운다
   const [minP, setMinP] = useState(String(event?.minPlayers ?? initialGame?.minPlayers ?? ""));
   const [maxP, setMaxP] = useState(String(event?.maxPlayers ?? initialGame?.maxPlayers ?? initialGame?.minPlayers ?? ""));
@@ -38,7 +121,8 @@ export function EventForm({ event, date, gameId }: Props) {
 
   const onSubmit = async (ev: FormEvent<HTMLFormElement>) => {
     ev.preventDefault();
-    if (!user || !g) return;
+    if (!user) return;
+    if (!g) return toast("게임을 골라 주세요");
     const f = Object.fromEntries(new FormData(ev.currentTarget)) as Record<string, string>;
     const min = Number(minP);
     const max = Number(maxP);
@@ -73,17 +157,33 @@ export function EventForm({ event, date, gameId }: Props) {
     <>
       <h2>{event ? "모집 공지 수정" : "모집 공지 올리기"}</h2>
       <form className="form" onSubmit={onSubmit}>
-        <label className="full">
-          게임 *
-          <select className="input" name="gameId" required value={gid} onChange={(e) => onGameChange(e.target.value)}>
-            <option value="">선택하세요</option>
-            {sorted.map((x) => (
-              <option key={x.id} value={x.id}>
-                {x.name} ({players(x)})
-              </option>
-            ))}
-          </select>
-        </label>
+        <div className="full">
+          <div className="field-label">게임 *</div>
+          {g && !picking ? (
+            <div className="picked-game">
+              <Cover game={g} className="cover-sm" />
+              <div className="picked-info">
+                <b>{g.name}</b>
+                <div className="muted small">
+                  {players(g)}
+                  {ownersOf(g.id).length > 0 && <> · 📦 {ownersOf(g.id).map((o) => o.name).join(", ")}</>}
+                </div>
+              </div>
+              <button type="button" className="btn btn-sm" onClick={() => setPicking(true)}>
+                다른 게임 고르기
+              </button>
+            </div>
+          ) : (
+            <EventGamePicker
+              games={sorted}
+              selected={gid}
+              onPick={(id) => {
+                onGameChange(id);
+                setPicking(false);
+              }}
+            />
+          )}
+        </div>
         <p className="full small">
           {g && me?.played?.[g.id] && (
             <>
