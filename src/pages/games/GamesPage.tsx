@@ -222,6 +222,10 @@ export function GamesPage() {
       <section className="hero">
         <h1>오늘 밤, 누가 범인일까?</h1>
         <p className="muted">우리끼리 해 본 / 하고 싶은 머더미스터리 게임 모음</p>
+        <p className="muted small">
+          교회 청년 모임 친구들끼리 쓰는 초대제 사이트예요. 게임 정보는 누구나 볼 수 있고, 플레이 기록·일정·대여는 초대받은
+          회원만 쓸 수 있어요.
+        </p>
       </section>
       <UpcomingStrip />
       <div className="toolbar">
