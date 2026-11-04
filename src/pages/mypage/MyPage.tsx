@@ -27,21 +27,32 @@ const TABS: [Tab, string][] = [
 ];
 let savedTab: Tab = "all";
 
-// 게임 기록 목록 접힘 여부. 새로고침해도 유지되도록 localStorage에 저장한다
-const COLLAPSE_KEY = "mm_checklist_collapsed";
-function loadCollapsed() {
-  try {
-    return localStorage.getItem(COLLAPSE_KEY) === "1";
-  } catch {
-    return false;
-  }
+// 섹션 접힘 여부. 새로고침해도 유지되도록 localStorage에 저장한다
+function useCollapsed(key: string) {
+  const [collapsed, setCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem(key) === "1";
+    } catch {
+      return false;
+    }
+  });
+  const toggle = () => {
+    try {
+      localStorage.setItem(key, collapsed ? "0" : "1");
+    } catch {
+      // 저장할 수 없으면 이번 방문 동안만 유지
+    }
+    setCollapsed(!collapsed);
+  };
+  return [collapsed, toggle] as const;
 }
-function saveCollapsed(v: boolean) {
-  try {
-    localStorage.setItem(COLLAPSE_KEY, v ? "1" : "0");
-  } catch {
-    // 저장할 수 없으면 이번 방문 동안만 유지
-  }
+
+function CollapseButton({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => void }) {
+  return (
+    <button className="btn btn-ghost btn-sm" aria-expanded={!collapsed} onClick={onToggle}>
+      {collapsed ? "펼치기 ▾" : "접기 ▴"}
+    </button>
+  );
 }
 
 function ProfileForm({ me }: { me: Profile }) {
@@ -131,6 +142,7 @@ function Unplayed({ me, onOpen }: { me: Profile; onOpen: (id: string) => void })
   const { ownersOf } = useGameHelpers();
   const [show, setShowState] = useState<TodoShow>(savedTodoShow);
   const setShow = (s: TodoShow) => setShowState((savedTodoShow = s));
+  const [collapsed, toggleCollapsed] = useCollapsed("mm_unplayed_collapsed");
   const todo = games.filter((g) => !me.played?.[g.id]).sort((a, b) => cleanName(a.name).localeCompare(cleanName(b.name), "ko"));
   const keep: Record<TodoShow, (g: Game) => boolean> = {
     all: () => true,
@@ -141,34 +153,43 @@ function Unplayed({ me, onOpen }: { me: Profile; onOpen: (id: string) => void })
     <section className="card">
       <div className="section-head">
         <h2 className="section-title">🧩 아직 안 해 본 게임 ({todo.length})</h2>
-        <div className="seg">
-          {TODO_SHOWS.map(([s, label]) => (
-            <button key={s} className={show === s ? "on" : ""} onClick={() => setShow(s)}>
-              {label}
-            </button>
-          ))}
+        <div className="section-head">
+          {!collapsed && (
+            <div className="seg">
+              {TODO_SHOWS.map(([s, label]) => (
+                <button key={s} className={show === s ? "on" : ""} onClick={() => setShow(s)}>
+                  {label}
+                </button>
+              ))}
+            </div>
+          )}
+          <CollapseButton collapsed={collapsed} onToggle={toggleCollapsed} />
         </div>
       </div>
-      <GameTiles
-        key={show}
-        games={todo.filter(keep[show])}
-        onOpen={onOpen}
-        sub={(g) => {
-          const owners = ownersOf(g.id);
-          return (
-            <>
-              {[players(g), playTime(g.playTime)].filter(Boolean).join(" · ")}
-              {owners.length > 0 && (
-                <>
-                  <br />
-                  📦 {owners.map((o) => (o.id === me.id ? "나" : o.name)).join(", ")}
-                </>
-              )}
-            </>
-          );
-        }}
-        empty={show === "all" ? "모든 게임을 다 해 봤어요! 🎉" : "해당하는 게임이 없어요."}
-      />
+      {collapsed ? (
+        <p className="muted small">안 해 본 게임 {todo.length}개가 숨겨져 있어요.</p>
+      ) : (
+        <GameTiles
+          key={show}
+          games={todo.filter(keep[show])}
+          onOpen={onOpen}
+          sub={(g) => {
+            const owners = ownersOf(g.id);
+            return (
+              <>
+                {[players(g), playTime(g.playTime)].filter(Boolean).join(" · ")}
+                {owners.length > 0 && (
+                  <>
+                    <br />
+                    📦 {owners.map((o) => (o.id === me.id ? "나" : o.name)).join(", ")}
+                  </>
+                )}
+              </>
+            );
+          }}
+          empty={show === "all" ? "모든 게임을 다 해 봤어요! 🎉" : "해당하는 게임이 없어요."}
+        />
+      )}
     </section>
   );
 }
@@ -245,7 +266,7 @@ function Friends({ onOpenFriend }: { onOpenFriend: (id: string) => void }) {
           <tr>
             <th>이름</th>
             <th>플레이</th>
-            <th>안 해봄</th>
+            <th>위시리스트</th>
             <th>보유</th>
             <th>좋아하는 스타일</th>
             <th>한마디</th>
@@ -257,12 +278,12 @@ function Friends({ onOpenFriend }: { onOpenFriend: (id: string) => void }) {
             return (
               <tr key={p.id}>
                 <td>
-                  <button className="link-btn" title="해 본 게임과 안 해 본 게임 보기" onClick={() => onOpenFriend(p.id)}>
+                  <button className="link-btn" title="해 본 게임과 위시리스트 보기" onClick={() => onOpenFriend(p.id)}>
                     {displayName(p) || "익명"}
                   </button>
                 </td>
                 <td>{playedCount}개</td>
-                <td>{games.length - playedCount}개</td>
+                <td>{games.filter((g) => p.liked?.[g.id]).length}개</td>
                 <td>{Object.keys(p.owned || {}).filter((id) => games.some((g) => g.id === id)).length}개</td>
                 <td>{p.prefNote || "-"}</td>
                 <td className="muted">{p.bio || ""}</td>
@@ -280,12 +301,8 @@ export function MyPage() {
   const { openModal } = useModal();
   const [tab, setTabState] = useState<Tab>(savedTab);
   const setTab = (t: Tab) => setTabState((savedTab = t));
-  const [collapsed, setCollapsedState] = useState(loadCollapsed);
+  const [collapsed, toggleCollapsed] = useCollapsed("mm_checklist_collapsed");
   usePageMeta("마이페이지", "내가 플레이한 머더미스터리 게임과 평점, 취향, 추천 게임을 기록합니다.", "mypage");
-  const toggleCollapsed = () => {
-    saveCollapsed(!collapsed);
-    setCollapsedState(!collapsed);
-  };
 
   if (!user || !me) return <LoginRequired title="🕵️ 탐정 수첩" message="로그인하면 플레이한 게임과 취향을 기록할 수 있어요." />;
 
@@ -392,9 +409,7 @@ export function MyPage() {
                 ))}
               </div>
             )}
-            <button className="btn btn-ghost btn-sm" aria-expanded={!collapsed} onClick={toggleCollapsed}>
-              {collapsed ? "펼치기 ▾" : "접기 ▴"}
-            </button>
+            <CollapseButton collapsed={collapsed} onToggle={toggleCollapsed} />
           </div>
         </div>
         {collapsed ? (
@@ -414,7 +429,7 @@ export function MyPage() {
             🔗 친구 초대 링크 복사
           </button>
         </div>
-        <p className="muted small">친구 이름을 누르면 그 친구가 해 본 게임과 안 해 본 게임을 볼 수 있어요.</p>
+        <p className="muted small">친구 이름을 누르면 그 친구가 해 본 게임과 위시리스트(♡ 하고 싶어요)를 볼 수 있어요.</p>
         <Friends onOpenFriend={(id) => openModal(<FriendGames profileId={id} />)} />
       </section>
     </div>
