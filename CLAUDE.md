@@ -40,7 +40,7 @@ npm run deploy                     # hosting → firestore
 **도구 위치·실행**
 - `git` `C:\Program Files\Git\cmd`, Node 24 `C:\Program Files\nodejs`, `gh` `C:\Program Files\GitHub CLI`. PATH에 없으면 `$env:PATH = "C:\Program Files\nodejs;$env:APPDATA\npm;$env:PATH"`.
 - Firebase CLI는 Claude 앱 AppData(`C:\Users\admin\AppData\Local\Packages\Claude_pzs8sxrjxfjjc\LocalCache\Roaming\npm\firebase.cmd`)에 있어 터미널 패널에서는 전체 경로로 실행. `gh` 로그인도 터미널 패널에선 안 보이므로 브라우저 승인 명령은 Claude 셸에서 백그라운드로 돌리고 코드를 사용자에게 전달. firebase 로그인은 `somanbg@gmail.com`(`~/.config/configstore`).
-- 샌드박스 셸에선 Firebase 로그인·전역 npm이 안 보임 → `npm`, `firebase`, `git push`는 샌드박스 밖에서. 네트워크 없이 빌드하면 게임 페이지가 빠진 결과가 나오니 로그의 `게임 N개를 ... 만들어요`를 확인. `dist/`를 안 건드리고 확인할 땐 `npx vite build --outDir <스크래치> --emptyOutDir`.
+- 샌드박스 셸에선 Firebase 로그인·전역 npm이 안 보임 → `npm`, `firebase`, `git push`, `gh`는 샌드박스 밖에서. 네트워크 없이 빌드하면 게임 페이지가 빠진 결과가 나오니 로그의 `게임 N개를 ... 만들어요`를 확인. `dist/`를 안 건드리고 확인할 땐 `npx vite build --outDir <스크래치> --emptyOutDir`. `build-preview`·`hosting-local`은 `dist/`만 열므로 스크래치 빌드를 보려면 `dist/`에 복사(`dist/`는 gitignore).
 - Python은 3.14뿐 → 일괄 스크립트는 node로(skill-creator의 python 스크립트도 node로 옮겨 씀). `ffmpeg` 없음. 헤드리스 브라우저는 Edge(`C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe`) + `puppeteer-core`.
 - Java가 없어 Firestore 에뮬레이터 불가. 규칙은 `firebase deploy --only firestore:rules --dry-run`(샌드박스 밖)으로 컴파일만 확인하고 `[W]` 경고도 볼 것. 규칙 Set엔 `toList()`가 없어 map의 바뀐 키 값은 검사 못 함. 검증 추가 전엔 공개 REST(`https://firestore.googleapis.com/v1/projects/mahamuder/databases/(default)/documents/games?pageSize=300`)로 기존 문서가 통과하는지 확인.
 - 모드별 env: `node -e "import('vite').then(v=>console.log(v.loadEnv('demo','.','VITE_')))"`(`.env` 위에 `.env.demo`).
@@ -87,7 +87,7 @@ npm run deploy                     # hosting → firestore
 
 **Web Worker**: 무거운 계산은 `lib/*.worker.ts`(`new Worker(new URL("…", import.meta.url), { type: "module" })`). 데이터만 넘기고(`SplitInput`), effect 정리에서 `terminate()`.
 
-**PWA**: `public/manifest.webmanifest`·아이콘(`icon.svg`에서 Edge 헤드리스로 PNG 렌더)·`public/sw.js`. SW는 배포 빌드에서만 등록(`main.tsx`), 화면은 네트워크 우선(오프라인만 저장본), `/assets/*`만 캐시 우선, `/__/`(로그인)·외부 요청은 안 건드림. `build-preview`로 확인한 뒤엔 그 탭에서 SW 등록 해제.
+**PWA**: `public/manifest.webmanifest`·아이콘·`public/sw.js`. 아이콘은 `icon.svg`가 원본: `<img src=icon.svg width=N>`만 있는 HTML을 스크래치에 두고 `msedge --headless=new --hide-scrollbars --force-device-scale-factor=1 --window-size=N,N --screenshot=<out.png> <html>`로 512·192·180(`apple-touch-icon.png`) 렌더. 마스커블 안전 영역(중심 반지름 40%) 안에 그림을 둘 것. SW는 배포 빌드에서만 등록(`main.tsx`), 화면은 네트워크 우선(오프라인만 저장본), `/assets/*`만 캐시 우선, `/__/`(로그인)·외부 요청은 안 건드림. `build-preview`로 확인한 뒤엔 그 탭에서 SW 등록 해제.
 
 **스타일**: 전역 `src/styles/style.css` 하나. 옛 클래스(`card`, `btn btn-primary`, `modal`, `cal-day` 등)를 재사용.
 
