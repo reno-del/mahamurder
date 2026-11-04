@@ -8,6 +8,7 @@ import { ymd } from "../../lib/format";
 import { Calendar } from "./Calendar";
 import { EventCard, EventModal } from "./EventCard";
 import { EventForm } from "./EventForm";
+import { Notices } from "./Notices";
 import { needsRecord, sortEv } from "./eventUtils";
 import { usePageMeta } from "../../lib/usePageMeta";
 
@@ -77,6 +78,7 @@ export function SchedulePage() {
           + 모집 공지 올리기
         </button>
       </section>
+      <Notices />
       {toRecord.length > 0 && (
         <section>
           <h2 className="section-title">📝 다녀온 모임 기록하기</h2>

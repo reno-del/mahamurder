@@ -79,6 +79,18 @@ export interface GameEvent {
 export type EventFields = Omit<GameEvent, "id" | "hostUid" | "hostName" | "participants">;
 export type NewEvent = Omit<GameEvent, "id">;
 
+// notices/{id}: 회원 누구나 쓰는 전체 공지. 새 일정과 함께 scripts/send-push.mjs가 알림을 켠 기기로 보낸다
+export interface Notice {
+  id: string;
+  uid: string;
+  name: string;
+  text: string;
+  createdAt?: number; // ms
+}
+
+// 이 기기의 알림 상태. ios: 아이폰·아이패드는 홈 화면에 추가한 앱에서만 받을 수 있음, denied: 브라우저에서 차단됨
+export type PushState = "on" | "off" | "denied" | "ios" | "unsupported";
+
 export interface AppUser {
   uid: string;
   name: string;
@@ -128,4 +140,13 @@ export interface Store {
   joinEvent(id: string, user: { uid: string; name: string }): Promise<void>;
   leaveEvent(id: string, uid: string): Promise<void>;
   deleteEvent(id: string): Promise<void>;
+
+  watchNotices(cb: (notices: Notice[]) => void): Unsubscribe;
+  createNotice(notice: Omit<Notice, "id" | "createdAt">): Promise<void>;
+  deleteNotice(id: string): Promise<void>;
+
+  // 이 기기로 알림 받기 (pushTokens/{FCM 토큰}에 uid를 남긴다)
+  pushState(): Promise<PushState>;
+  enablePush(uid: string): Promise<void>;
+  disablePush(): Promise<void>;
 }

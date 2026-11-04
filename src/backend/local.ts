@@ -4,11 +4,20 @@ import type { AppUser, Store } from "../types";
 
 type Doc = Record<string, unknown>;
 type Collection = Record<string, Doc>;
-type ListKey = "games" | "users" | "guests" | "events";
+type ListKey = "games" | "users" | "guests" | "events" | "notices";
 type Key = ListKey | "me";
 
-const KEY: Record<Key, string> = { games: "mm_games", users: "mm_users", guests: "mm_guests", events: "mm_events", me: "mm_me" };
-const listeners: Record<Key, ((v: never) => void)[]> = { games: [], users: [], guests: [], events: [], me: [] };
+const KEY: Record<Key, string> = {
+  games: "mm_games",
+  users: "mm_users",
+  guests: "mm_guests",
+  events: "mm_events",
+  notices: "mm_notices",
+  me: "mm_me",
+};
+const listeners: Record<Key, ((v: never) => void)[]> = { games: [], users: [], guests: [], events: [], notices: [], me: [] };
+// 데모에서는 실제 알림 없이 켜짐 여부만 기억한다
+const PUSH_KEY = "mm_push";
 
 function read<T>(key: Key, fallback: T): T {
   try {
@@ -162,6 +171,26 @@ export async function create(): Promise<Store> {
       const all = read<Collection>("events", {});
       delete all[id];
       write("events", all);
+    },
+
+    watchNotices: (cb) => watch("notices", cb),
+    async createNotice(n) {
+      const all = read<Collection>("notices", {});
+      all[newId()] = { ...n, createdAt: Date.now() };
+      write("notices", all);
+    },
+    async deleteNotice(id) {
+      const all = read<Collection>("notices", {});
+      delete all[id];
+      write("notices", all);
+    },
+
+    pushState: async () => (localStorage.getItem(PUSH_KEY) ? "on" : "off"),
+    async enablePush() {
+      localStorage.setItem(PUSH_KEY, "1");
+    },
+    async disablePush() {
+      localStorage.removeItem(PUSH_KEY);
     },
   };
   return store;

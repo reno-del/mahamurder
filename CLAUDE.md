@@ -90,6 +90,8 @@ npm run deploy                     # hosting → firestore
 
 **PWA**: `public/manifest.webmanifest`·아이콘·`public/sw.js`. 아이콘은 `icon.svg`가 원본: `<img src=icon.svg width=N>`만 있는 HTML을 스크래치에 두고 `msedge --headless=new --hide-scrollbars --force-device-scale-factor=1 --window-size=N,N --screenshot=<out.png> <html>`로 512·192·180(`apple-touch-icon.png`) 렌더. 마스커블 안전 영역(중심 반지름 40%) 안에 그림을 둘 것. SW는 배포 빌드에서만 등록(`main.tsx`), 화면은 네트워크 우선(오프라인만 저장본), `/assets/*`만 캐시 우선, `/__/`(로그인)·외부 요청은 안 건드림. `build-preview`로 확인한 뒤엔 그 탭에서 SW 등록 해제.
 
+**알림(웹 푸시)**: 서버가 없어 `.github/workflows/push.yml`이 10분마다 `scripts/send-push.mjs`(의존성 없음, 서비스 계정으로 Firestore REST·FCM v1)를 돌려 새 `events`와 `notices`(전체 공지, `pages/schedule/Notices.tsx`)를 `pushTokens/{FCM 토큰}: {uid}`로 보냄. 보낸 기록 `pushLog/{event_<id>|notice_<id>}`(규칙상 앱 접근 불가), `_init`이 없으면 기존 것은 표시만 하고, 하루 지난 것·지난 일정은 건너뜀. 알림 표시·클릭은 `sw.js`의 `push`/`notificationclick`(FCM data 메시지만 씀). 토큰은 기본 VAPID 키로 받고 localStorage `mm_push_token`, 데모는 `mm_push`만. 배포 빌드에서만 동작하고 아이폰은 홈 화면 앱에서만. 로컬 확인: `GOOGLE_APPLICATION_CREDENTIALS=<키 JSON> node scripts/send-push.mjs --dry-run`(샌드박스 밖).
+
 **스타일**: 전역 `src/styles/style.css` 하나. 옛 클래스(`card`, `btn btn-primary`, `modal`, `cal-day` 등)를 재사용.
 
 **SEO** (`seo/plugin.ts`, `src/lib/seo.ts`, `src/data/site.ts`): AI 크롤러는 JS를 안 돌리므로 빌드 때 Firestore 공개 REST로 게임 목록을 읽어

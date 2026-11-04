@@ -98,5 +98,27 @@ service cloud.firestore {
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['participants'])
         && request.resource.data.participants.diff(resource.data.participants).affectedKeys().hasOnly([request.auth.uid]);
     }
+
+    // 전체 공지: 회원 누구나 쓰고, 지우는 것은 쓴 사람만. 길이 제한은 화면(Notices.tsx)과 같다
+    match /notices/{noticeId} {
+      allow read: if member();
+      allow create: if member()
+        && request.resource.data.keys().hasOnly(['uid', 'name', 'text', 'createdAt'])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.name is string && request.resource.data.name.size() <= 50
+        && request.resource.data.text is string && request.resource.data.text.size() > 0
+        && request.resource.data.text.size() <= 300
+        && request.resource.data.createdAt == request.time;
+      allow delete: if member() && resource.data.uid == request.auth.uid;
+    }
+
+    // 알림 받을 기기(문서 id = FCM 토큰). 기기마다 마지막으로 켠 회원 것이 되고, 아무도 읽을 수 없다.
+    // 보내기(scripts/send-push.mjs)는 서비스 계정으로 읽는다. 보낸 기록 pushLog도 서비스 계정만 쓴다
+    match /pushTokens/{token} {
+      allow create, update: if member()
+        && request.resource.data.keys().hasOnly(['uid', 'updatedAt'])
+        && request.resource.data.uid == request.auth.uid;
+      allow delete: if signedIn() && resource.data.uid == request.auth.uid;
+    }
   }
 }

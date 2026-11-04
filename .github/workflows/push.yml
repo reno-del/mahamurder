@@ -1,0 +1,41 @@
+# 새 모임 공지·전체 공지를 알림을 켠 회원 기기로 보낸다 (scripts/send-push.mjs).
+# 서버(Cloud Functions) 대신 10분마다 실행하므로 알림이 늦을 수 있다. GitHub의 예약 실행은 자주 몇 분씩 밀린다.
+# 공개 저장소는 60일 동안 커밋이 없으면 예약 실행이 꺼진다 → Actions 탭에서 다시 켤 것.
+# 필요한 저장소 비밀값: FIREBASE_SERVICE_ACCOUNT (deploy.yml과 같음)
+name: Push notifications
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: push
+  cancel-in-progress: false
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: scripts
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Write service account key
+        run: printf '%s' "$SA_KEY" > "$RUNNER_TEMP/sa.json"
+        env:
+          SA_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+
+      - name: Send
+        run: node scripts/send-push.mjs
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/sa.json
+
+      - name: Remove key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/sa.json"

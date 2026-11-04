@@ -20,12 +20,16 @@ import {
   deleteField,
   serverTimestamp,
   writeBatch,
+  query,
+  orderBy,
+  limit,
   type QuerySnapshot,
 } from "firebase/firestore";
 import { FirebaseError } from "firebase/app";
 import { SEED_GAMES } from "../data/seedGames";
 import type { FirebaseConfig } from "../config";
-import type { AppUser, Game, GameEvent, Guest, Profile, Store } from "../types";
+import { pushSupport } from "../lib/push";
+import type { AppUser, Game, GameEvent, Guest, Notice, Profile, Store } from "../types";
 
 const toList = <T>(snap: QuerySnapshot) => snap.docs.map((d) => ({ id: d.id, ...d.data() }) as T);
 
@@ -47,11 +51,44 @@ function savePendingInvite(code: string | null) {
   }
 }
 
+// 이 기기에서 알림을 켰을 때 받은 FCM 토큰. 끌 때 pushTokens 문서를 지우는 데 쓴다
+const PUSH_KEY = "mm_push_token";
+function loadPushToken() {
+  try {
+    return localStorage.getItem(PUSH_KEY);
+  } catch {
+    return null;
+  }
+}
+function savePushToken(token: string | null) {
+  try {
+    if (token) localStorage.setItem(PUSH_KEY, token);
+    else localStorage.removeItem(PUSH_KEY);
+  } catch {
+    /* 저장 불가(사생활 보호 모드 등) */
+  }
+}
+
 export async function create(config: FirebaseConfig): Promise<Store> {
   const app = initializeApp(config);
   const auth = getAuth(app);
   const db = getFirestore(app);
   let emitUser: ((user: AppUser | null) => void) | undefined;
+
+  // 알림은 public/sw.js가 받아 보여 준다. 서비스 워커는 배포 빌드에서만 등록되므로(main.tsx) 개발 서버에서는 못 쓴다.
+  // firebase/messaging은 알림을 켤 때만 불러온다
+  async function fcmToken() {
+    const { getMessaging, getToken, isSupported } = await import("firebase/messaging");
+    if (!import.meta.env.PROD || !(await isSupported())) throw new Error("이 브라우저에서는 알림을 받을 수 없어요");
+    return getToken(getMessaging(app), { serviceWorkerRegistration: await navigator.serviceWorker.ready });
+  }
+  async function saveToken(uid: string) {
+    const token = await fcmToken();
+    const old = loadPushToken();
+    await setDoc(doc(db, "pushTokens", token), { uid, updatedAt: serverTimestamp() });
+    savePushToken(token);
+    if (old && old !== token) await deleteDoc(doc(db, "pushTokens", old)).catch(() => {});
+  }
 
   // users 문서가 있으면 회원이다. 없으면 기억해 둔 초대 코드로 만들어 본다 (규칙이 config/invite의 코드와 비교)
   async function checkMember(user: AppUser): Promise<AppUser> {
@@ -81,7 +118,11 @@ export async function create(config: FirebaseConfig): Promise<Store> {
       return onAuthStateChanged(auth, async (u) => {
         if (!u) return cb(null);
         const user: AppUser = { uid: u.uid, name: u.displayName || "익명", photo: u.photoURL || "", member: false };
-        cb(await checkMember(user));
+        const checked = await checkMember(user);
+        cb(checked);
+        // 토큰은 바뀔 수 있고, 보내기 스크립트가 못 쓰게 된 토큰을 지웠을 수도 있어 접속할 때마다 다시 저장한다
+        if (checked.member && loadPushToken() && !pushSupport() && Notification.permission === "granted")
+          saveToken(u.uid).catch(() => {});
       });
     },
     async join(code) {
@@ -113,7 +154,11 @@ export async function create(config: FirebaseConfig): Promise<Store> {
         throw e;
       }
     },
-    logout: () => signOut(auth),
+    async logout() {
+      // 로그아웃한 기기로 알림이 가지 않게 먼저 끈다 (문서 삭제는 로그인 상태여야 규칙을 통과)
+      await store.disablePush().catch(() => {});
+      await signOut(auth);
+    },
 
     // ---------- 게임 ----------
     watchGames(cb) {
@@ -185,6 +230,51 @@ export async function create(config: FirebaseConfig): Promise<Store> {
     joinEvent: (id, user) => updateDoc(doc(db, "events", id), { [`participants.${user.uid}`]: user.name }),
     leaveEvent: (id, uid) => updateDoc(doc(db, "events", id), { [`participants.${uid}`]: deleteField() }),
     deleteEvent: (id) => deleteDoc(doc(db, "events", id)),
+
+    // ---------- 전체 공지 ----------
+    watchNotices(cb) {
+      const q = query(collection(db, "notices"), orderBy("createdAt", "desc"), limit(20));
+      return onSnapshot(q, (s) =>
+        cb(
+          s.docs.map((d) => {
+            // 방금 쓴 공지는 서버 시각이 아직 없으므로 추정값을 쓴다
+            const data = d.data({ serverTimestamps: "estimate" });
+            return { ...data, id: d.id, createdAt: data.createdAt?.toMillis?.() } as Notice;
+          }),
+        ),
+      );
+    },
+    async createNotice(n) {
+      await addDoc(collection(db, "notices"), { ...n, createdAt: serverTimestamp() });
+    },
+    deleteNotice: (id) => deleteDoc(doc(db, "notices", id)),
+
+    // ---------- 알림 ----------
+    async pushState() {
+      const unsupported = pushSupport();
+      if (unsupported) return unsupported;
+      if (!import.meta.env.PROD) return "unsupported";
+      if (Notification.permission === "denied") return "denied";
+      return loadPushToken() && Notification.permission === "granted" ? "on" : "off";
+    },
+    async enablePush(uid) {
+      const perm = await Notification.requestPermission();
+      if (perm === "denied") throw new Error("알림이 차단돼 있어요. 브라우저 설정에서 이 사이트의 알림을 허용해 주세요");
+      if (perm !== "granted") throw new Error("알림을 허용해야 받을 수 있어요");
+      await saveToken(uid);
+    },
+    async disablePush() {
+      const token = loadPushToken();
+      savePushToken(null);
+      if (!token) return;
+      await deleteDoc(doc(db, "pushTokens", token)).catch(() => {});
+      try {
+        const { getMessaging, deleteToken } = await import("firebase/messaging");
+        await deleteToken(getMessaging(app));
+      } catch {
+        /* 이미 지워졌거나 지원하지 않는 브라우저 */
+      }
+    },
   };
   return store;
 }

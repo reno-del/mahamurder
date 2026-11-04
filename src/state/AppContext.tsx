@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import { store } from "../store";
 import { showError, toast } from "../lib/toast";
 import { displayName, ymd } from "../lib/format";
-import type { AppUser, Game, GameEvent, Guest, Profile, Rental } from "../types";
+import type { AppUser, Game, GameEvent, Guest, Notice, Profile, Rental } from "../types";
 
 /** 게임 보유자: 가입한 친구(프로필) 또는 미등록 친구(guests) */
 export interface Owner {
@@ -33,6 +33,8 @@ interface AppState {
   events: GameEvent[];
   /** 일정 목록을 한 번이라도 받았는지 (공유 링크의 일정이 지워졌는지 가릴 때 씀) */
   eventsReady: boolean;
+  /** 전체 공지 (최근 것부터) */
+  notices: Notice[];
   /** 로그인한 사용자의 프로필. 로그아웃 상태면 null, 문서가 아직 없으면 { id } */
   me: Profile | null;
 }
@@ -49,6 +51,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [guests, setGuests] = useState<Guest[]>([]);
   const [events, setEvents] = useState<GameEvent[]>([]);
   const [eventsReady, setEventsReady] = useState(false);
+  const [notices, setNotices] = useState<Notice[]>([]);
 
   // 게임 목록은 누구나 볼 수 있다
   useEffect(() => store.watchGames(setGames), []);
@@ -63,13 +66,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     []
   );
 
-  // 프로필·미등록 친구·일정은 회원만 읽을 수 있다 (firestore.rules)
+  // 프로필·미등록 친구·일정·공지는 회원만 읽을 수 있다 (firestore.rules)
   const uid = user?.uid;
   useEffect(() => {
     setProfiles([]);
     setGuests([]);
     setEvents([]);
     setEventsReady(false);
+    setNotices([]);
     if (!uid) return;
     const unsubs = [
       store.watchProfiles(setProfiles),
@@ -78,14 +82,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setEvents(evs);
         setEventsReady(true);
       }),
+      store.watchNotices((ns) => setNotices([...ns].sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)))),
     ];
     return () => unsubs.forEach((u) => u());
   }, [uid]);
 
   const value = useMemo<AppState>(() => {
     const me = user ? profiles.find((p) => p.id === user.uid) || { id: user.uid } : null;
-    return { user, outsider, authReady, games, profiles, guests, events, eventsReady, me };
-  }, [user, outsider, authReady, games, profiles, guests, events, eventsReady]);
+    return { user, outsider, authReady, games, profiles, guests, events, eventsReady, notices, me };
+  }, [user, outsider, authReady, games, profiles, guests, events, eventsReady, notices]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }
