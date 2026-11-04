@@ -44,6 +44,15 @@ service cloud.firestore {
         && after is map && after.size() <= 50
         && after.diff(before).affectedKeys().size() == 1;
     }
+    // 보관 위치: storage만, 한 번에 한 벌만 바꿀 수 있다.
+    // 규칙에서는 바뀐 키의 값을 꺼낼 수 없어 값 길이는 화면(StoragePicker, 30자)에서만 제한한다
+    function changesOneStorage() {
+      let before = resource.data.get('storage', {});
+      let after = request.resource.data.get('storage', {});
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['storage'])
+        && after is map && after.size() <= 50
+        && after.diff(before).affectedKeys().size() == 1;
+    }
 
     // 게임 소개: 누구나 볼 수 있고(사이트 소개·검색 노출), 회원은 추가/수정 가능.
     // 삭제는 등록한 사람만 (createdBy가 없는 예전 게임은 회원 누구나). 등록자는 바꿀 수 없다
@@ -54,7 +63,7 @@ service cloud.firestore {
         && request.resource.data.createdBy == request.auth.uid
         && request.resource.data.keys().hasOnly(editableFields().concat(['createdBy', 'createdAt']))
         && validGame(request.resource.data);
-      allow update: if member() && (editsGame() || changesOneRental());
+      allow update: if member() && (editsGame() || changesOneRental() || changesOneStorage());
       allow delete: if member() && resource.data.get('createdBy', request.auth.uid) == request.auth.uid;
     }
 

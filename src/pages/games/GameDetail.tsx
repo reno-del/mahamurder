@@ -6,6 +6,7 @@ import { Cover } from "../../components/Cover";
 import { showError, toast } from "../../lib/toast";
 import { displayName, playTime, players, prettyDate, safeUrl, stars, won } from "../../lib/format";
 import { RentalButton } from "../../components/RentalButton";
+import { StoragePicker } from "../../components/StoragePicker";
 import { GameForm } from "./GameForm";
 import { categoryName, categoryOf } from "../../lib/category";
 
@@ -134,7 +135,10 @@ export function GameDetail({ gameId }: { gameId: string }) {
             ) : (
               <span>📦 {ownerName} 게임 · 대여 가능</span>
             )}
-            <RentalButton game={g} copy={c} />
+            <span className="rental-actions">
+              <StoragePicker game={g} copy={c} />
+              <RentalButton game={g} copy={c} />
+            </span>
           </div>
         );
       })}

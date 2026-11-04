@@ -22,6 +22,8 @@ export interface Game {
   createdBy?: string; // 등록한 사람 uid. 이 사람만 삭제할 수 있다 (값이 없는 예전 게임은 누구나)
   // 보유자 uid -> 그 사람의 게임을 누가 빌려 갔는지. 보유 여부 자체는 users/{uid}.owned에 있다
   rentals?: Record<string, Rental>;
+  // 보유자 uid(또는 guest id) -> 그 사람의 게임을 교회 어디에 두었는지 (예: "신관 6층")
+  storage?: Record<string, string>;
 }
 export type GameInput = Omit<Game, "id"> & { id?: string };
 
@@ -107,6 +109,8 @@ export interface Store {
   // ownerUid의 게임을 빌리거나 반납한다
   rentGame(id: string, ownerUid: string, rental: Rental): Promise<void>;
   returnGame(id: string, ownerUid: string): Promise<void>;
+  // ownerUid의 게임을 둔 위치를 바꾼다. place가 null이면 지운다
+  setStorage(id: string, ownerUid: string, place: string | null): Promise<void>;
 
   watchProfiles(cb: (profiles: Profile[]) => void): Unsubscribe;
   // path 예: "nickname", "played.<gameId>", "liked.<gameId>" / value가 null이면 필드 삭제

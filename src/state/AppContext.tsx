@@ -11,11 +11,15 @@ export interface Owner {
   guest?: boolean;
 }
 
-/** 한 사람이 가진 게임 한 벌과 그 대여 상태 */
+/** 한 사람이 가진 게임 한 벌과 그 대여 상태, 보관 위치 */
 export interface Copy {
   owner: Owner;
   rental?: Rental;
+  place?: string;
 }
+
+/** 교회에서 게임을 주로 두는 곳. 목록에 없는 곳은 직접 입력한다 */
+export const STORAGE_PLACES = ["신관 5층", "신관 6층", "본관 3층"];
 
 interface AppState {
   /** 로그인한 회원. 로그인했어도 초대받지 않았으면 null이고 outsider에 들어간다 */
@@ -127,6 +131,23 @@ export function useGameHelpers() {
       .map((p) => ({ id: p.id, name: displayName(p) || "익명" })),
     ...guests.filter((g) => g.owned?.[gid]).map((g) => ({ id: g.id, name: g.name, guest: true })),
   ];
+  // 이 사람이 다른 게임을 가장 많이 둔 곳. 새로 보유 등록한 게임의 위치로 미리 넣는다
+  const usualPlace = (ownerId: string) => {
+    const count = new Map<string, number>();
+    games.forEach((g) => {
+      const p = g.storage?.[ownerId];
+      if (p) count.set(p, (count.get(p) || 0) + 1);
+    });
+    return [...count].sort((a, b) => b[1] - a[1])[0]?.[0];
+  };
+  // 보유를 켜면 평소 위치를 넣고, 끄면 위치를 지운다
+  const syncStorage = (g: Game, ownerId: string, on: boolean) => {
+    if (on) {
+      const p = usualPlace(ownerId);
+      return p && !g.storage?.[ownerId] ? store.setStorage(g.id, ownerId, p) : undefined;
+    }
+    return g.storage?.[ownerId] ? store.setStorage(g.id, ownerId, null) : undefined;
+  };
 
   return {
     gameById: (id?: string) => games.find((g) => g.id === id),
@@ -166,7 +187,21 @@ export function useGameHelpers() {
     ownersOf,
     // 게임 한 개를 친구 여러 명이 가지고 있을 수 있으므로 보유자마다 한 벌씩 대여 상태를 본다
     copiesOf(g: Game): Copy[] {
-      return ownersOf(g.id).map((owner) => ({ owner, rental: g.rentals?.[owner.id] }));
+      return ownersOf(g.id).map((owner) => ({ owner, rental: g.rentals?.[owner.id], place: g.storage?.[owner.id] }));
+    },
+    // 위치 고르기에 보여 줄 곳: 주로 쓰는 곳 + 누군가 직접 입력한 곳
+    storagePlaces(): string[] {
+      const extra = new Set(games.flatMap((g) => Object.values(g.storage || {})));
+      STORAGE_PLACES.forEach((p) => extra.delete(p));
+      return [...STORAGE_PLACES, ...[...extra].sort((a, b) => a.localeCompare(b, "ko"))];
+    },
+    // 게임을 옮겨 두는 일은 보유자가 아니어도 할 수 있으니 회원 누구나 바꿀 수 있게 둔다
+    async setStorage(g: Game, owner: Owner, place: string | null) {
+      if (!requireLogin(user)) return;
+      await store
+        .setStorage(g.id, owner.id, place)
+        .then(() => toast(place ? `'${g.name}' 위치를 ${place}(으)로 바꿨어요` : `'${g.name}' 위치를 지웠어요`))
+        .catch(showError);
     },
 
     async toggleOwned(g: Game) {
@@ -178,6 +213,7 @@ export function useGameHelpers() {
         await store.returnGame(g.id, user!.uid).catch(showError);
       }
       await store.setProfileField(user!.uid, `owned.${g.id}`, on ? null : true).catch(showError);
+      await syncStorage(g, user!.uid, !on)?.catch(showError);
     },
 
     // 미등록 친구의 보유 목록은 로그인한 누구나 고칠 수 있다
@@ -190,11 +226,13 @@ export function useGameHelpers() {
         await store.returnGame(g.id, guest.id).catch(showError);
       }
       await store.setGuestField(guest.id, `owned.${g.id}`, on ? true : null).catch(showError);
+      await syncStorage(g, guest.id, on)?.catch(showError);
     },
     async deleteGuest(guest: Guest) {
       if (!requireLogin(user) || !confirm(`미등록 친구 '${guest.name}'을(를) 삭제할까요? 이 친구의 보유 목록과 대여 기록도 사라져요.`)) return;
       try {
         await Promise.all(games.filter((g) => g.rentals?.[guest.id]).map((g) => store.returnGame(g.id, guest.id)));
+        await Promise.all(games.filter((g) => g.storage?.[guest.id]).map((g) => store.setStorage(g.id, guest.id, null)));
         await store.deleteGuest(guest.id);
       } catch (err) {
         showError(err);

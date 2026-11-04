@@ -4,6 +4,7 @@ import { useApp, useGameHelpers, type Copy, type Owner } from "../../state/AppCo
 import { useModal } from "../../components/Modal";
 import { LoginRequired } from "../../components/Layout";
 import { RentalButton } from "../../components/RentalButton";
+import { StoragePicker } from "../../components/StoragePicker";
 import { showError, toast } from "../../lib/toast";
 import { cleanName, displayName, players, playTime, prettyDate, ymd } from "../../lib/format";
 import { GameDetail } from "../games/GameDetail";
@@ -69,6 +70,9 @@ export function LibraryPage() {
   const rented = rows.filter((r) => r.rental).sort((a, b) => a.rental!.date.localeCompare(b.rental!.date));
   const available = rows.filter((r) => !r.rental);
   const borrowedByMe = rented.filter((r) => r.rental!.uid === user.uid);
+  // 위치별 개수 (빌려 간 게임은 그 자리에 없으니 뺀다). 위치 미정은 맨 뒤
+  const placeCounts = [...available.reduce((m, r) => m.set(r.place || "위치 미정", (m.get(r.place || "위치 미정") || 0) + 1), new Map<string, number>())]
+    .sort((a, b) => Number(a[0] === "위치 미정") - Number(b[0] === "위치 미정") || a[0].localeCompare(b[0], "ko"));
 
   // 가입한 친구는 게임이 하나라도 있을 때만(내가 먼저), 미등록 친구는 게임을 추가할 수 있도록 항상 보여 준다
   const members = profiles
@@ -101,7 +105,7 @@ export function LibraryPage() {
       <section className="card">
         <h1 className="section-title">📦 보유 게임</h1>
         <p className="muted small">
-          친구들이 가진 게임과 지금 누가 빌려 갔는지 한눈에 볼 수 있어요. 내 게임은 게임 상세나 마이페이지에서 📦를 눌러 등록하고,
+          친구들이 가진 게임을 교회 어디에 두었는지, 지금 누가 빌려 갔는지 한눈에 볼 수 있어요. 게임을 다른 곳으로 옮겼다면 📍 위치를 바꿔 주세요. 내 게임은 게임 상세나 마이페이지에서 📦를 눌러 등록하고,
           가입하지 않은 친구의 게임은 아래에서 미등록 친구를 추가해 등록하세요.
         </p>
         <div className="stats">
@@ -122,6 +126,15 @@ export function LibraryPage() {
             <span>내가 빌린 게임</span>
           </div>
         </div>
+        {placeCounts.length > 0 && (
+          <p className="muted small storage-summary">
+            {placeCounts.map(([p, n]) => (
+              <span key={p}>
+                📍 {p} {n}
+              </span>
+            ))}
+          </p>
+        )}
       </section>
 
       {rows.length > 0 && (
@@ -136,6 +149,7 @@ export function LibraryPage() {
                     <th>주인</th>
                     <th>빌린 사람</th>
                     <th>대여일</th>
+                    <th>원래 위치</th>
                     <th></th>
                   </tr>
                 </thead>
@@ -149,6 +163,9 @@ export function LibraryPage() {
                         <td>{r.rental!.uid === user.uid ? <b>나</b> : r.rental!.name}</td>
                         <td>
                           {prettyDate(r.rental!.date)} <span className="muted small">· {daysSince(r.rental!.date)}일째</span>
+                        </td>
+                        <td>
+                          <StoragePicker game={r.game} copy={r} />
                         </td>
                         <td className="cell-action">
                           <RentalButton game={r.game} copy={r} />
@@ -219,6 +236,7 @@ export function LibraryPage() {
                       <th>게임</th>
                       <th>인원</th>
                       <th>시간</th>
+                      <th>위치</th>
                       <th>상태</th>
                       <th></th>
                     </tr>
@@ -229,6 +247,9 @@ export function LibraryPage() {
                         {gameCell(r.game)}
                         <td>{players(r.game)}</td>
                         <td>{playTime(r.game.playTime) || "-"}</td>
+                        <td>
+                          <StoragePicker game={r.game} copy={r} />
+                        </td>
                         <td>
                           {r.rental ? (
                             <span className="badge badge-rented">

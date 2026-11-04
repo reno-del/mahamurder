@@ -151,6 +151,8 @@ export async function create(config: FirebaseConfig): Promise<Store> {
 
     rentGame: (id, ownerUid, rental) => updateDoc(doc(db, "games", id), { [`rentals.${ownerUid}`]: rental }),
     returnGame: (id, ownerUid) => updateDoc(doc(db, "games", id), { [`rentals.${ownerUid}`]: deleteField() }),
+    setStorage: (id, ownerUid, place) =>
+      updateDoc(doc(db, "games", id), { [`storage.${ownerUid}`]: place === null ? deleteField() : place }),
 
     // ---------- 프로필 ----------
     watchProfiles(cb) {

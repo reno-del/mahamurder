@@ -119,6 +119,9 @@ export async function create(): Promise<Store> {
     async returnGame(id, ownerUid) {
       update("games", id, (g) => setPath(g, `rentals.${ownerUid}`, null));
     },
+    async setStorage(id, ownerUid, place) {
+      update("games", id, (g) => setPath(g, `storage.${ownerUid}`, place));
+    },
 
     watchProfiles: (cb) => watch("users", cb),
     async setProfileField(uid, path, value) {
