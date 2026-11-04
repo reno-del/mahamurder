@@ -12,7 +12,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - 라우팅: `BrowserRouter`(라우트 `main.tsx`, 메뉴 `components/Layout.tsx`). 옛 해시 주소(`#/games`)는 `main.tsx`가 렌더링 전에 바꿈. `/games/<id>`는 목록 위 상세 모달(닫으면 `/games`), 다른 페이지의 게임 상세는 주소를 안 바꾸는 모달. Hosting은 `cleanUrls` + `**` → `/index.html`.
 - 문서: `README.md`, `feature-overview.html`, `feature-guide.html`(번호 핀)이 `shots/*.png`(데모 화면 1920×1080)를 씀 → Artifact로 올릴 때 `shots/*` 함께. 화면이 바뀌면 `npm run dev:demo`에서 뷰포트 1280×720·`deviceScaleFactor` 1.5, `.demo-banner` 숨기고 다시 찍고, 핀은 `getBoundingClientRect()` %로 맞춤. 기획은 `docs/PRD-*.md`(남은 것은 7절 "열린 질문").
 - 테스트·린트 없음. 검증은 `npm run typecheck` + 브라우저(쓰기 기능은 `dev:demo`, `.claude/launch.json`의 `dev-demo` 포트 5173).
-- 데모 데이터는 localStorage `mm_games`·`mm_users`·`mm_guests`·`mm_events`(배열 아닌 `{ id: 문서 }`)와 `mm_me`. 기본 게임은 4개뿐이라 여러 친구가 필요한 화면은 직접 채워 테스트.
+- 데모 데이터는 localStorage `mm_games`·`mm_users`·`mm_guests`·`mm_events`(배열 아닌 `{ id: 문서 }`)와 `mm_me`. 기본 게임은 4개뿐이라 여러 친구가 필요한 화면은 직접 채워 테스트. 일정은 기본값이 없음 → `mm_events`에 `{ id, hostUid, hostName, gameId, gameName, date, time, place, minPlayers, maxPlayers, participants: { uid: name } }`를 넣고 `/schedule/<id>`로 열기(`mm_me.uid`가 기본 `u1`).
 
 ## 명령어
 
@@ -65,6 +65,7 @@ npm run deploy                     # hosting → firestore
 
 **브라우저 패널 테스트(데모)**
 - `prompt()`/`confirm()`이 자동화를 멈춤 → 먼저 `window.prompt = () => "탐정"; window.confirm = () => true`.
+- 내장 브라우저엔 `navigator.share`가 없음 → 모바일 뷰포트(`resize_window` mobile, `pointer: coarse` 됨)에서 `navigator.share = async d => { window.__shared = d }`로 바꿔 넣고 확인. 실제 공유 창은 배포 후 휴대폰에서.
 - 파일 입력: `DataTransfer`에 `File`을 넣고 `change`(Vite가 루트 파일을 `/murder_mystery_games.csv`처럼 내줌). 실제 사이트는 Claude in Chrome `file_upload`.
 - React 제어 입력(날짜 등): `Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(el, v)` 뒤 `input` 이벤트.
 - 파일을 셸로 통째로 다시 쓰면 Vite가 빈 파일을 캐시할 수 있음 → `does not provide an export named`면 `dev-demo`를 재시작. 스택의 `?t=`가 편집 시각인 `createRoot`·`removeChild` 오류는 HMR 잔여물.
@@ -101,7 +102,7 @@ npm run deploy                     # hosting → firestore
 **주의할 점**
 - `StrictMode`라 개발 모드에서 effect가 두 번 돔. `useEffect` 콜백은 아무것도 반환하지 않거나 정리 함수만 반환(`useEffect(() => window.scrollTo(0, 0))`는 화면이 하얘짐). 구독 effect는 `store.watch*`의 해제 함수를 그대로 반환.
 - `<form>` 안 버튼은 `type="button"`, 검색칸은 `onKeyDown`에서 Enter 막기.
-- 카톡 자동 전송은 사실상 불가(비즈 앱·검수·카카오 로그인 필요). 카카오톡 공유나 링크 복사를 쓸 것.
+- 카톡 자동 전송은 사실상 불가(비즈 앱·검수·카카오 로그인 필요). 카카오톡 공유나 링크 복사를 쓸 것. 모집 카드 공유(`EventCard`)는 터치 기기(`pointer: coarse`)+`navigator.share`면 공유 시트(`text`에만 링크, `url` 따로 넘기면 카톡에 두 번 붙음), 아니면 클립보드 복사.
 
 **회원 제한**: 규칙의 `member()` = `users/{uid}` 문서가 있는 사람만 읽기·쓰기 가능. `users` 문서 생성 시 `inviteCode`가 `config/invite.code`(콘솔 관리, 회원만 읽음)와 같아야 함. 초대 링크 `/join/<code>`(`pages/join/JoinPage.tsx`, 로그인 중엔 localStorage `mm_invite`에 보관). `useApp()`의 `user`는 회원만, 로그인한 비회원은 `outsider`(`requireLogin`·`LoginRequired`가 초대 안내). 데모: 로그인=회원, `mm_me`에 `member: false`면 비회원 화면, 초대 코드 `demo`로 가입 흐름.
 
