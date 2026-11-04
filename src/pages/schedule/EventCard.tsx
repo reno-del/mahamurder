@@ -37,7 +37,8 @@ export function EventCard({ event: e }: { event: GameEvent }) {
     await store.leaveEvent(e.id, user.uid);
     toast("참여를 취소했어요");
   });
-  // 카톡방에 그대로 붙여 넣을 수 있게 일정 요약과 링크를 함께 복사한다
+  // 카톡방에 그대로 붙여 넣을 수 있게 일정 요약과 링크를 함께 보낸다.
+  // 휴대폰은 공유 시트로 바로 채팅방을 고르고, PC 등은 클립보드에 복사한다
   const share = run(async () => {
     const limit = e.minPlayers === e.maxPlayers ? e.maxPlayers : `${e.minPlayers}~${e.maxPlayers}`;
     const text = [
@@ -46,6 +47,15 @@ export function EventCard({ event: e }: { event: GameEvent }) {
       `현재 ${n}/${limit}명 모집 중`,
       `${location.origin}/schedule/${e.id}`,
     ].join("\n");
+    if (canShareSheet()) {
+      try {
+        // url을 따로 넘기면 카톡 등에서 링크가 두 번 붙어서 글 안에만 넣는다
+        await navigator.share({ text });
+        return;
+      } catch (err) {
+        if ((err as Error).name === "AbortError") return; // 사용자가 공유 시트를 닫음
+      }
+    }
     try {
       await navigator.clipboard.writeText(text);
       toast("공유 링크를 복사했어요. 카톡방에 붙여 넣어 보세요");
@@ -141,7 +151,7 @@ export function EventCard({ event: e }: { event: GameEvent }) {
             </button>
           )}
           <button className="btn btn-sm" onClick={share}>
-            🔗 공유 링크 복사
+            {canShareSheet() ? "📤 공유하기" : "🔗 공유 링크 복사"}
           </button>
           {isHost && (
             <>
@@ -157,6 +167,11 @@ export function EventCard({ event: e }: { event: GameEvent }) {
       )}
     </article>
   );
+}
+
+/** 휴대폰처럼 터치가 주 입력인 기기에서만 공유 시트를 쓴다(PC 공유 창보다 복사가 편함) */
+function canShareSheet() {
+  return typeof navigator.share === "function" && matchMedia("(pointer: coarse)").matches;
 }
 
 /** 달력에서 일정을 눌렀을 때 모달 내용. 데이터가 바뀌면 자동으로 최신 상태가 된다. */
