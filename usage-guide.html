@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>사용 설명서</title>
+<style>
+  :root {
+    --bg: #f6f2ec; --surface: #fffdf9; --surface-2: #efe8de; --text: #221c18; --muted: #776b60;
+    --line: #e2d8cb; --accent: #9b1c2c; --accent-soft: #f6dfe1; --gold: #b7862a; --ok: #2e7d4f;
+    --ok-soft: #dcf0e3; --warn: #a35a00; --warn-soft: #fbecd5; --blue: #2b5a9b; --blue-soft: #dfe8f5;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: var(--bg); }
+  body {
+    width: 1600px; color: var(--text);
+    font-family: "Malgun Gothic", "Apple SD Gothic Neo", sans-serif; font-size: 17px; line-height: 1.45;
+    padding: 48px 56px 40px;
+  }
+  b { font-weight: 700; }
+  .muted { color: var(--muted); }
+
+  /* 머리말 */
+  .head { display: flex; align-items: center; gap: 22px; margin-bottom: 30px; }
+  .logo { width: 84px; height: 84px; border-radius: 22px; }
+  .head h1 { font-size: 46px; letter-spacing: -1.5px; line-height: 1.1; }
+  .head h1 span { color: var(--accent); }
+  .head p { font-size: 19px; color: var(--muted); margin-top: 6px; }
+  .url { margin-left: auto; background: var(--accent); color: #fff; font-weight: 700; font-size: 22px;
+    padding: 14px 24px; border-radius: 999px; letter-spacing: -.3px; }
+
+  .sec-title { display: flex; align-items: center; gap: 12px; font-size: 25px; font-weight: 800; letter-spacing: -.6px; margin-bottom: 14px; }
+  .num { width: 36px; height: 36px; border-radius: 50%; background: var(--text); color: var(--bg);
+    display: grid; place-items: center; font-size: 19px; flex: none; }
+  .sec-title small { font-size: 16px; font-weight: 400; color: var(--muted); letter-spacing: 0; }
+
+  .box { background: var(--surface); border: 1px solid var(--line); border-radius: 18px;
+    box-shadow: 0 1px 2px rgb(40 20 10 / 6%), 0 6px 20px rgb(40 20 10 / 6%); }
+
+  /* 1·2행: 시작하기 + 설치 */
+  .row1 { display: grid; grid-template-columns: 470px 1fr; gap: 26px; margin-bottom: 30px; }
+  .start { padding: 22px 24px; }
+  .steps { list-style: none; display: grid; gap: 12px; }
+  .steps li { display: grid; grid-template-columns: 44px 1fr; gap: 12px; align-items: center; }
+  .ico { width: 44px; height: 44px; border-radius: 12px; background: var(--accent-soft); display: grid; place-items: center; font-size: 22px; }
+  .steps .t { font-weight: 700; font-size: 18px; }
+  .steps .d { color: var(--muted); font-size: 15px; }
+  .arrow-down { text-align: center; color: var(--line); font-size: 14px; line-height: 0; }
+  .note { margin-top: 14px; background: var(--warn-soft); color: var(--warn); border-radius: 12px; padding: 10px 14px; font-size: 15px; }
+
+  .install { padding: 22px 24px; }
+  .devices { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+  .dev { border-radius: 14px; background: var(--surface-2); padding: 16px; }
+  .dev h3 { font-size: 18px; display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .dev h3 .tag { font-size: 13px; font-weight: 400; color: var(--muted); }
+  .phone { width: 150px; height: 214px; margin: 0 auto 12px; border: 6px solid #2b2420; border-radius: 26px; background: #fff;
+    position: relative; overflow: hidden; }
+  .phone .bar, .pc .bar { height: 26px; background: #f1f1f1; border-bottom: 1px solid #ddd; font-size: 10px; display: flex; align-items: center; padding: 0 8px; gap: 4px; color: #555; }
+  .phone .bar .addr, .pc .bar .addr { flex: 1; background: #fff; border-radius: 6px; height: 16px; display: flex; align-items: center; padding: 0 6px; }
+  .phone .page, .pc .page { padding: 8px; display: grid; gap: 6px; }
+  .phone .blk, .pc .blk { height: 18px; border-radius: 4px; background: #eee5da; }
+  .phone .blk.r, .pc .blk.r { background: var(--accent); height: 12px; width: 60%; }
+  .menu { position: absolute; right: 6px; top: 30px; width: 104px; background: #fff; border: 1px solid #ccc; border-radius: 8px;
+    box-shadow: 0 4px 12px rgb(0 0 0 / 20%); font-size: 10.5px; overflow: hidden; }
+  .menu div { padding: 5px 8px; border-bottom: 1px solid #eee; color: #444; }
+  .menu .hl { background: var(--accent-soft); color: var(--accent); font-weight: 700; outline: 2px solid var(--accent); outline-offset: -2px; }
+  .sheet { position: absolute; left: 0; right: 0; bottom: 0; background: #fff; border-top: 1px solid #ccc; border-radius: 14px 14px 0 0;
+    box-shadow: 0 -4px 12px rgb(0 0 0 / 15%); font-size: 10.5px; padding: 6px 0 4px; }
+  .sheet div { padding: 5px 10px; color: #444; border-bottom: 1px solid #f0f0f0; }
+  .sheet .hl { background: var(--accent-soft); color: var(--accent); font-weight: 700; outline: 2px solid var(--accent); outline-offset: -2px; }
+  .safari-bottom { position: absolute; left: 0; right: 0; bottom: 0; height: 26px; background: #f1f1f1; border-top: 1px solid #ddd;
+    display: flex; justify-content: space-around; align-items: center; font-size: 13px; color: #777; }
+  .pc { width: 100%; height: 214px; margin-bottom: 12px; border: 6px solid #2b2420; border-radius: 10px; background: #fff; position: relative; overflow: hidden; }
+  .pc .bar { height: 30px; font-size: 11px; }
+  .pc .bar .addr { height: 18px; }
+  .pc .inst { width: 20px; height: 16px; border-radius: 4px; display: grid; place-items: center; outline: 2px solid var(--accent); background: var(--accent-soft); color: var(--accent); font-size: 12px; font-weight: 700; }
+  .pc .pop { position: absolute; right: 8px; top: 36px; width: 170px; background: #fff; border: 1px solid #ccc; border-radius: 8px;
+    box-shadow: 0 4px 12px rgb(0 0 0 / 20%); font-size: 11px; padding: 10px; }
+  .pc .pop .btns { display: flex; justify-content: flex-end; gap: 6px; margin-top: 8px; }
+  .pc .pop .b { padding: 3px 9px; border-radius: 5px; border: 1px solid #ccc; }
+  .pc .pop .b.p { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 700; }
+  .pin { position: absolute; width: 22px; height: 22px; border-radius: 50%; background: var(--accent); color: #fff; font-size: 12px; font-weight: 700;
+    display: grid; place-items: center; box-shadow: 0 0 0 3px #fff; z-index: 2; }
+  .dev ol { padding-left: 0; list-style: none; display: grid; gap: 5px; counter-reset: s; font-size: 15px; }
+  .dev ol li { counter-increment: s; position: relative; padding-left: 28px; }
+  .dev ol li::before { content: counter(s); position: absolute; left: 0; top: 1px; width: 20px; height: 20px; border-radius: 50%; background: var(--accent); color: #fff;
+    font-size: 12px; font-weight: 700; display: grid; place-items: center; }
+  kbd { font-family: inherit; background: #fff; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 6px; padding: 0 6px; font-size: 14px; white-space: nowrap; }
+
+  .push { margin-top: 16px; display: grid; grid-template-columns: auto 1fr; gap: 18px; align-items: center;
+    background: var(--blue-soft); border-radius: 14px; padding: 14px 18px; }
+  .push .bell { font-size: 34px; }
+  .push .t { font-weight: 800; font-size: 18px; color: var(--blue); }
+  .push .flow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 4px; font-size: 15.5px; }
+  .push .flow .s { background: #fff; border-radius: 8px; padding: 3px 10px; border: 1px solid #c7d5ea; }
+  .push .flow .go { color: var(--blue); font-weight: 700; }
+  .btn-mock { display: inline-block; border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 1px 10px; font-size: 14px; font-weight: 700; }
+
+  /* 페이지 카드 */
+  .pages { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; margin-bottom: 30px; }
+  .pg { overflow: hidden; display: flex; flex-direction: column; }
+  .pg .shot { height: 190px; background-size: cover; background-position: top center; border-bottom: 1px solid var(--line); position: relative; }
+  .pg .route { position: absolute; left: 12px; top: 12px; background: rgb(34 28 24 / 85%); color: #fff; font-size: 13px; font-family: Consolas, monospace;
+    border-radius: 6px; padding: 2px 8px; }
+  .pg .lock { position: absolute; right: 12px; top: 12px; font-size: 12.5px; border-radius: 6px; padding: 2px 8px; font-weight: 700; }
+  .lock.open { background: var(--ok-soft); color: var(--ok); }
+  .lock.mem { background: var(--accent-soft); color: var(--accent); }
+  .pg .body { padding: 16px 20px 18px; }
+  .pg h3 { font-size: 22px; letter-spacing: -.5px; display: flex; align-items: center; gap: 8px; }
+  .pg .lead { color: var(--muted); font-size: 15px; margin: 3px 0 10px; }
+  .pg ul { list-style: none; display: grid; gap: 6px; font-size: 15.5px; }
+  .pg li { display: grid; grid-template-columns: 22px 1fr; }
+  .pg li::before { content: "▸"; color: var(--accent); }
+  .pg.tips { background: var(--text); color: var(--bg); border-color: var(--text); }
+  .pg.tips h3 { color: #fff; }
+  .pg.tips .lead { color: #bfb3a6; }
+  .pg.tips li::before { content: "✓"; color: var(--gold); }
+  .pg.tips .body { padding: 24px 24px; }
+  .pg.tips .big { font-size: 52px; line-height: 1; margin-bottom: 10px; }
+
+  /* 흐름 */
+  .flowbox { padding: 22px 24px; }
+  .flow-line { display: grid; grid-template-columns: repeat(6, 1fr); gap: 0; align-items: stretch; }
+  .fstep { position: relative; text-align: center; padding: 0 10px; }
+  .fstep .circle { width: 74px; height: 74px; border-radius: 50%; margin: 0 auto 10px; display: grid; place-items: center; font-size: 34px;
+    background: var(--accent-soft); border: 3px solid var(--accent); position: relative; z-index: 1; }
+  .fstep:not(:last-child)::after { content: ""; position: absolute; top: 37px; left: calc(50% + 40px); right: calc(-50% + 40px); height: 3px; background: var(--accent); }
+  .fstep:not(:last-child)::before { content: ""; position: absolute; top: 31px; right: calc(-50% + 36px); border: 7.5px solid transparent; border-left: 11px solid var(--accent); z-index: 1; }
+  .fstep .t { font-weight: 800; font-size: 18px; }
+  .fstep .where { font-family: Consolas, monospace; font-size: 13px; color: var(--accent); }
+  .fstep .d { font-size: 14.5px; color: var(--muted); margin-top: 3px; }
+  .alt { margin-top: 18px; display: flex; align-items: center; gap: 14px; background: var(--ok-soft); border-radius: 12px; padding: 12px 18px; font-size: 16px; }
+  .alt .e { font-size: 28px; }
+
+  .foot { margin-top: 22px; display: flex; justify-content: space-between; color: var(--muted); font-size: 15px; }
+</style>
+</head>
+<body>
+
+<header class="head">
+  <img class="logo" src="public/icon-192.png" alt="">
+  <div>
+    <h1>머더미스터리 클럽 <span>사용 설명서</span></h1>
+    <p>게임 찾기 · 모임 잡기 · 게임 빌리기 · 기록 남기기를 한 곳에서. 친구 초대로만 들어오는 우리끼리 사이트예요.</p>
+  </div>
+  <div class="url">mahamuder.web.app</div>
+</header>
+
+<div class="row1">
+  <!-- 시작하기 -->
+  <section>
+    <div class="sec-title"><span class="num">1</span>처음 들어오기</div>
+    <div class="box start">
+      <ol class="steps">
+        <li><span class="ico">💌</span><div><div class="t">친구에게 초대 링크 받기</div><div class="d">마이페이지 → <b>친구 초대 링크 복사</b>로 회원이 보내 줘요</div></div></li>
+        <li><span class="ico">🔑</span><div><div class="t">링크 열고 Google 로그인</div><div class="d">오른쪽 위 <span class="btn-mock">Google 로그인</span> · 로그인 창을 거쳐도 초대는 기억돼요</div></div></li>
+        <li><span class="ico">🤝</span><div><div class="t">초대 수락하기 → 회원 완료</div><div class="d">이제 일정·대여·기록 등 모든 기능을 쓸 수 있어요</div></div></li>
+        <li><span class="ico">🕵️</span><div><div class="t">마이페이지에서 닉네임 정하기</div><div class="d">사이트 전체에서 Google 이름 대신 닉네임이 보여요</div></div></li>
+      </ol>
+      <div class="note">초대 없이 로그인하면 <b>게임 소개</b>만 볼 수 있어요. 다른 계정이었다면 로그아웃 후 다시!</div>
+    </div>
+  </section>
+
+  <!-- PWA 설치 -->
+  <section>
+    <div class="sec-title"><span class="num">2</span>앱처럼 설치하기 <small>홈 화면 아이콘으로 바로 열고, 알림도 받아요</small></div>
+    <div class="box install">
+      <div class="devices">
+        <!-- 안드로이드 -->
+        <div class="dev">
+          <h3>🤖 안드로이드 <span class="tag">Chrome · 삼성 인터넷</span></h3>
+          <div class="phone">
+            <div class="bar"><div class="addr">mahamuder.web.app</div><b style="font-size:13px">⋮</b></div>
+            <div class="page"><div class="blk r"></div><div class="blk"></div><div class="blk"></div><div class="blk"></div><div class="blk"></div></div>
+            <div class="menu"><div>새 탭</div><div>북마크</div><div>공유…</div><div class="hl">📲 앱 설치</div><div>홈 화면에 추가</div></div>
+            <span class="pin" style="right:2px;top:2px">1</span>
+            <span class="pin" style="right:110px;top:84px">2</span>
+          </div>
+          <ol>
+            <li>Chrome으로 사이트 열고 오른쪽 위 <kbd>⋮</kbd></li>
+            <li><kbd>앱 설치</kbd> 또는 <kbd>홈 화면에 추가</kbd></li>
+            <li><kbd>설치</kbd>를 누르면 홈 화면에 🔍 아이콘</li>
+          </ol>
+        </div>
+        <!-- 아이폰 -->
+        <div class="dev">
+          <h3>🍎 아이폰 <span class="tag">꼭 Safari로</span></h3>
+          <div class="phone">
+            <div class="bar"><div class="addr">mahamuder.web.app</div></div>
+            <div class="page"><div class="blk r"></div><div class="blk"></div><div class="blk"></div></div>
+            <div class="sheet"><div>복사</div><div>읽기 목록에 추가</div><div class="hl">⊞ 홈 화면에 추가</div><div>즐겨찾기 추가</div></div>
+            <span class="pin" style="left:6px;bottom:58px">2</span>
+          </div>
+          <ol>
+            <li>Safari 아래쪽 공유 버튼 <kbd>⬆︎ (네모에 화살표)</kbd></li>
+            <li>목록을 내려 <kbd>홈 화면에 추가</kbd></li>
+            <li>오른쪽 위 <kbd>추가</kbd> → 홈 화면 아이콘으로 열기</li>
+          </ol>
+        </div>
+        <!-- PC -->
+        <div class="dev">
+          <h3>💻 PC <span class="tag">Chrome · Edge</span></h3>
+          <div class="pc">
+            <div class="bar"><div class="addr">mahamuder.web.app</div><span class="inst">⊕</span><b>⋮</b></div>
+            <div class="page"><div class="blk r" style="width:30%"></div><div class="blk"></div><div class="blk"></div><div class="blk"></div></div>
+            <div class="pop"><b>앱을 설치하시겠습니까?</b><div style="margin-top:4px;color:#666">🔍 머더미스터리 클럽<br>mahamuder.web.app</div>
+              <div class="btns"><span class="b">취소</span><span class="b p">설치</span></div></div>
+            <span class="pin" style="right:44px;top:2px">1</span>
+            <span class="pin" style="right:4px;top:118px">2</span>
+          </div>
+          <ol>
+            <li>주소창 오른쪽 <kbd>설치 아이콘 ⊕</kbd> (없으면 <kbd>⋮</kbd> → 앱 설치)</li>
+            <li><kbd>설치</kbd> → 작업 표시줄·시작 메뉴에 생겨요</li>
+          </ol>
+        </div>
+      </div>
+      <div class="push">
+        <div class="bell">🔔</div>
+        <div>
+          <div class="t">새 모임·전체 공지 알림 받기</div>
+          <div class="flow">
+            <span class="s">📅 일정 모집</span><span class="go">→</span>
+            <span class="s">공지 칸의 <span class="btn-mock">🔕 알림 받기</span></span><span class="go">→</span>
+            <span class="s">브라우저 창에서 <b>허용</b></span><span class="go">→</span>
+            <span class="s"><span class="btn-mock" style="background:var(--ok-soft);color:var(--ok)">🔔 알림 켜짐</span></span>
+          </div>
+          <div class="muted" style="font-size:14.5px;margin-top:5px">기기마다 한 번씩 켜요 · 10~20분 늦게 올 수 있어요 · <b>아이폰은 홈 화면에 설치한 앱에서만</b> 켤 수 있어요</div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- 페이지별 기능 -->
+<div class="sec-title"><span class="num">3</span>메뉴별로 할 수 있는 일 <small>위쪽 메뉴: 게임 소개 · 일정 모집 · 보유 게임 · 오늘 뭐 하지 · 마이페이지</small></div>
+<div class="pages">
+  <article class="box pg">
+    <div class="shot" style="background-image:url(shots/games.png)"><span class="route">/games</span><span class="lock open">누구나 보기</span></div>
+    <div class="body">
+      <h3>📚 게임 소개</h3>
+      <div class="lead">클럽이 아는 모든 머더미스터리 게임</div>
+      <ul>
+        <li><span>이름·제작사 검색, 분류·인원·구비·정발로 거르기, 평점·친구 플레이순 정렬</span></li>
+        <li><span>분류 3가지: 머더미스터리 · 추리 · 소셜 디덕션 (<b>?</b> 버튼으로 설명)</span></li>
+        <li><span>맨 위에 지금 <b>모집 중인 일정</b></span></li>
+        <li><span>회원은 <b>게임 추가</b> · <b>CSV 가져오기</b></span></li>
+      </ul>
+    </div>
+  </article>
+
+  <article class="box pg">
+    <div class="shot" style="background-image:url(shots/detail.png)"><span class="route">/games/&lt;게임&gt;</span><span class="lock open">게임 카드 클릭</span></div>
+    <div class="body">
+      <h3>🔍 게임 상세</h3>
+      <div class="lead">게임 하나에 대한 모든 것 · 주소를 보내면 바로 열려요</div>
+      <ul>
+        <li><span><b>플레이함 · ♡ 하고 싶어요 · 보유</b> 버튼, 별 다섯 개 평점</span></li>
+        <li><span>누가 가졌는지, 지금 빌릴 수 있는지, 📍 교회 어디에 있는지</span></li>
+        <li><span>해 본 친구와 친구들 평점</span></li>
+        <li><span><b>이 게임으로 모집하기</b> → 바로 공지 작성</span></li>
+      </ul>
+    </div>
+  </article>
+
+  <article class="box pg">
+    <div class="shot" style="background-image:url(shots/schedule.png)"><span class="route">/schedule</span><span class="lock mem">회원</span></div>
+    <div class="body">
+      <h3>📅 일정 모집</h3>
+      <div class="lead">"이 날 이 게임 할 사람!" 공지 올리고 모으기</div>
+      <ul>
+        <li><span>달력 날짜 누르기 → 게임·시간·장소·인원 정해 공지</span></li>
+        <li><span><b>참여하기</b> · 이미 해 본 게임이면 🤫 <b>스포일러 경고</b></span></li>
+        <li><span><b>공유</b>로 카톡방에 링크 → 누르면 그 공지가 바로 열림</span></li>
+        <li><span>전체 공지 · 🔔 알림 받기 · 다녀오면 <b>플레이 했어요</b></span></li>
+      </ul>
+    </div>
+  </article>
+
+  <article class="box pg">
+    <div class="shot" style="background-image:url(shots/library.png)"><span class="route">/library</span><span class="lock mem">회원</span></div>
+    <div class="body">
+      <h3>📦 보유 게임 · 대여</h3>
+      <div class="lead">누가 뭘 가졌고, 어디 있고, 누가 빌려 갔는지</div>
+      <ul>
+        <li><span><b>내 보유 게임 추가</b>로 가진 게임 등록</span></li>
+        <li><span><b>빌리기</b> → 빌린 사람은 <b>반납하기</b>, 주인은 <b>돌려받음</b></span></li>
+        <li><span>📍 보관 위치: 신관 5층 · 신관 6층 · 본관 3층 · 직접 입력</span></li>
+        <li><span>가입 안 한 친구 게임도 <b>미등록 친구 추가</b>로</span></li>
+      </ul>
+    </div>
+  </article>
+
+  <article class="box pg">
+    <div class="shot" style="background-image:url(shots/tonight.png)"><span class="route">/tonight</span><span class="lock mem">회원</span></div>
+    <div class="body">
+      <h3>🎲 오늘 뭐 하지</h3>
+      <div class="lead">모인 사람만 고르면 다 같이 처음 하는 게임을 찾아 줘요</div>
+      <ul>
+        <li><span>함께하는 사람 체크 → <b>아무도 안 해 본</b> 보유 게임</span></li>
+        <li><span>범위: 온 사람이 가진 게임 / 친구 전체 보유</span></li>
+        <li><span><b>N명이 할 수 있는 게임만</b> 켜서 인원 맞추기</span></li>
+        <li><span>4명 이상이면 <b>팀 나눠서 하기</b> (2~3팀 추천)</span></li>
+      </ul>
+    </div>
+  </article>
+
+  <article class="box pg">
+    <div class="shot" style="background-image:url(shots/mypage.png)"><span class="route">/mypage</span><span class="lock mem">회원</span></div>
+    <div class="body">
+      <h3>🕵️ 마이페이지 · 탐정 수첩</h3>
+      <div class="lead">내 기록과 취향, 친구들의 기록</div>
+      <ul>
+        <li><span>닉네임 · 한마디 · 좋아하는 스타일 · 선호 시간</span></li>
+        <li><span><b>게임 기록</b> 탭에서 플레이·별점·보유·♡ 한 번에 고치기</span></li>
+        <li><span>🧩 아직 안 해 본 게임 · 🔎 취향 맞춤 추천</span></li>
+        <li><span>친구 기록에서 <b>둘 다 안 해봄</b> · <b>친구 초대 링크 복사</b></span></li>
+      </ul>
+    </div>
+  </article>
+</div>
+
+<!-- 모임 흐름 -->
+<div class="sec-title"><span class="num">4</span>모임 한 번은 이렇게 흘러가요</div>
+<div class="box flowbox">
+  <div class="flow-line">
+    <div class="fstep"><div class="circle">📚</div><div class="t">게임 고르기</div><div class="where">게임 소개</div><div class="d">♡ 하고 싶어요로 찜해 두기</div></div>
+    <div class="fstep"><div class="circle">📅</div><div class="t">모집 공지</div><div class="where">일정 모집</div><div class="d">날짜·장소·인원 정해 올리기</div></div>
+    <div class="fstep"><div class="circle">💬</div><div class="t">카톡방에 공유</div><div class="where">공유 버튼</div><div class="d">알림 켠 친구는 푸시로도 받아요</div></div>
+    <div class="fstep"><div class="circle">🙋</div><div class="t">참여하기</div><div class="where">공지 카드</div><div class="d">최소 인원이 차면 "진행 확정"</div></div>
+    <div class="fstep"><div class="circle">📦</div><div class="t">게임 빌리기</div><div class="where">보유 게임</div><div class="d">위치 확인 → 빌리기 → 반납</div></div>
+    <div class="fstep"><div class="circle">⭐</div><div class="t">다녀와서 기록</div><div class="where">일정 · 마이페이지</div><div class="d">플레이 했어요 + 별점 → 다음 추천에 반영</div></div>
+  </div>
+  <div class="alt"><span class="e">🎲</span><div><b>미리 약속 안 했는데 모였다면?</b> &nbsp;<b>오늘 뭐 하지</b>에서 온 사람만 체크하세요. 아무도 안 해 본 게임과 팀 나누기를 바로 보여 줘요.</div></div>
+</div>
+
+<div class="foot">
+  <span>🤫 스포일러 금지 — 배경·세계관 태그는 일부러 안 보여요 · 해 본 게임 모임엔 한 번 더 물어봐요</span>
+  <span>화면은 데모 데이터 예시예요</span>
+</div>
+
+</body>
+</html>
