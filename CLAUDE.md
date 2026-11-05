@@ -12,7 +12,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - 라우팅: `BrowserRouter`(라우트 `main.tsx`, 메뉴 `components/Layout.tsx`). 옛 해시 주소(`#/games`)는 `main.tsx`가 렌더링 전에 바꿈. `/games/<id>`는 목록 위 상세 모달(닫으면 `/games`), 다른 페이지의 게임 상세는 주소를 안 바꾸는 모달. Hosting은 `cleanUrls` + `**` → `/index.html`.
 - 문서: `README.md`, `feature-overview.html`, `feature-guide.html`(번호 핀)이 `shots/*.png`(데모 화면 1920×1080)를 씀 → Artifact로 올릴 때 `shots/*` 함께. 화면이 바뀌면 `npm run dev:demo`에서 뷰포트 1280×720·`deviceScaleFactor` 1.5, `.demo-banner` 숨기고 다시 찍고, 핀은 `getBoundingClientRect()` %로 맞춤. 기획은 `docs/PRD-*.md`(남은 것은 7절 "열린 질문").
 - 테스트·린트 없음. 검증은 `npm run typecheck` + 브라우저(쓰기 기능은 `dev:demo`, `.claude/launch.json`의 `dev-demo` 포트 5173).
-- 데모 데이터는 localStorage `mm_games`·`mm_users`·`mm_guests`·`mm_events`(배열 아닌 `{ id: 문서 }`)와 `mm_me`. 기본 게임은 4개뿐이라 여러 친구가 필요한 화면은 직접 채워 테스트. 일정은 기본값이 없음 → `mm_events`에 `{ id, hostUid, hostName, gameId, gameName, date, time, place, minPlayers, maxPlayers, participants: { uid: name } }`를 넣고 `/schedule/<id>`로 열기(`mm_me.uid`가 기본 `u1`).
+- 데모 데이터는 localStorage `mm_games`·`mm_users`·`mm_guests`·`mm_events`·`mm_notices`(배열 아닌 `{ id: 문서 }`)와 `mm_me`, 알림 켜짐 표시 `mm_push`. 기본 게임은 4개뿐이라 여러 친구가 필요한 화면은 직접 채워 테스트. 일정은 기본값이 없음 → `mm_events`에 `{ id, hostUid, hostName, gameId, gameName, date, time, place, minPlayers, maxPlayers, participants: { uid: name } }`를 넣고 `/schedule/<id>`로 열기(`mm_me.uid`가 기본 `u1`).
 
 ## 명령어
 
@@ -32,6 +32,7 @@ npm run deploy                     # hosting → firestore
 - 순서는 항상 hosting → firestore(규칙이 먼저면 예전 화면의 게임 추가가 실패).
 - `main`에 push하면 `.github/workflows/deploy.yml`이 같은 순서로 배포(문서·스크린샷·CSV만 바뀌면 건너뜀, 수동 실행 가능). push 후 `gh run watch <id> --repo reno-del/mahamurder --exit-status`, `gh run view <id> --log`에 `게임 N개를 ... 만들어요`가 있는지 확인.
 - 비밀값 `FIREBASE_SERVICE_ACCOUNT`(서비스 계정 `firebase-adminsdk-fbsvc@mahamuder.iam.gserviceaccount.com` 키). 재등록: 콘솔에서 받은 키 경로를 `.env.secret`에 적고 `node scripts/set-deploy-secret.mjs`. 이 계정에는 서비스 사용량 소비자·Firebase 규칙 관리자·Cloud Datastore 색인 관리자 역할이 추가돼 있어야 함(없으면 403).
+- 알림 워크플로 수동 실행: `gh workflow run push.yml --repo reno-del/mahamurder`, 로그에 `새로 보낼 것 N개`. 같은 서비스 계정으로 FCM v1 발송도 됨(역할 추가 불필요). 저장소에 60일간 커밋이 없으면 예약 실행이 꺼짐.
 - workflow 파일 push에는 `gh` 토큰의 `workflow` 권한 필요(`gh auth refresh -s workflow`).
 - `config/invite` 문서의 `code`가 없거나 비면 가입 불가, 마이페이지에 "초대 코드가 아직 설정되지 않았어요"가 뜸(권한 문제 아님).
 
@@ -75,7 +76,7 @@ npm run deploy                     # hosting → firestore
 **백엔드 교체** (`src/store.ts`): `config.ts`의 `isConfigured`가 참이면 `backend/firebase.ts`, 거짓이면 `backend/local.ts`(localStorage, `prompt()` 닉네임 로그인)를 top-level await로 import(그래서 빌드 target es2022). `isConfigured`는 `.env`의 `VITE_FIREBASE_*` API 키가 비었거나 `YOUR_`로 시작하거나 `VITE_DEMO=1`이면 거짓. 두 백엔드는 `types.ts`의 `Store`를 구현하므로 **데이터 연산을 바꾸면 인터페이스와 두 파일 모두 수정**. 프로젝트를 바꾸면 `.env`를 안 읽는 `seo/plugin.ts`의 `PROJECT_ID`와 `src/data/site.ts` URL도 고칠 것.
 
 **상태** (`src/state/AppContext.tsx`):
-- `AppProvider`가 `store.watch*`로 `games`·`profiles`·`guests`·`events`를 구독. 컴포넌트는 `useApp()`으로 읽고 쓰기는 `store` 직접 호출(낙관적 업데이트 없음, 구독으로 반영).
+- `AppProvider`가 `store.watch*`로 `games`·`profiles`·`guests`·`events`·`notices`(최근 20개)를 구독. 컴포넌트는 `useApp()`으로 읽고 쓰기는 `store` 직접 호출(낙관적 업데이트 없음, 구독으로 반영).
 - `games`는 비로그인도 구독, 나머지는 로그인 uid가 있을 때만(그래서 비로그인 땐 보유·대여 정보가 비어 있음).
 - `me`: 로그아웃이면 `null`, 프로필 도착 전엔 `{ id }`.
 - `useGameHelpers()`: 플레이·선호·평점·보유 토글, 대여·반납 등 공유 동작(확인창·토스트 포함, `requireLogin(user)`). 페이지에서 `store`의 대여·보유 메서드를 직접 부르지 말고 이걸 쓸 것.
@@ -104,7 +105,7 @@ npm run deploy                     # hosting → firestore
 **주의할 점**
 - `StrictMode`라 개발 모드에서 effect가 두 번 돔. `useEffect` 콜백은 아무것도 반환하지 않거나 정리 함수만 반환(`useEffect(() => window.scrollTo(0, 0))`는 화면이 하얘짐). 구독 effect는 `store.watch*`의 해제 함수를 그대로 반환.
 - `<form>` 안 버튼은 `type="button"`, 검색칸은 `onKeyDown`에서 Enter 막기.
-- 카톡 자동 전송은 사실상 불가(비즈 앱·검수·카카오 로그인 필요). 카카오톡 공유나 링크 복사를 쓸 것. 모집 카드 공유(`EventCard`)는 터치 기기(`pointer: coarse`)+`navigator.share`면 공유 시트(`text`에만 링크, `url` 따로 넘기면 카톡에 두 번 붙음), 아니면 클립보드 복사.
+- 카톡 자동 전송은 사실상 불가(친구에게 보내기는 권한 신청·검수·5명 제한이고 자동 발송은 반려 대상, 나에게 보내기는 알림이 안 울림). 자동 알림은 웹 푸시, 카톡은 공유나 링크 복사. 모집 카드 공유(`EventCard`)는 터치 기기(`pointer: coarse`)+`navigator.share`면 공유 시트(`text`에만 링크, `url` 따로 넘기면 카톡에 두 번 붙음), 아니면 클립보드 복사.
 
 **회원 제한**: 규칙의 `member()` = `users/{uid}` 문서가 있는 사람만 읽기·쓰기 가능. `users` 문서 생성 시 `inviteCode`가 `config/invite.code`(콘솔 관리, 회원만 읽음)와 같아야 함. 초대 링크 `/join/<code>`(`pages/join/JoinPage.tsx`, 로그인 중엔 localStorage `mm_invite`에 보관). `useApp()`의 `user`는 회원만, 로그인한 비회원은 `outsider`(`requireLogin`·`LoginRequired`가 초대 안내). 데모: 로그인=회원, `mm_me`에 `member: false`면 비회원 화면, 초대 코드 `demo`로 가입 흐름.
 
@@ -116,5 +117,7 @@ npm run deploy                     # hosting → firestore
   - 보드라이프 출신 게임: `releaseDate`가 연도만(`"2014"`, `GameForm`은 텍스트 칸), `description`이 `영문명: …`/`디자이너: …` 줄 형식(영문명 중복 판정에 사용).
 - `users/{uid}`(본인만 쓰기): `played.{gameId}: {rating, date}`, `liked.{gameId}: true`("선호"·"♡ 하고 싶어요"·"위시리스트"는 같은 값), `owned.{gameId}: true`, `nickname`, `bio`, `prefNote`, `prefLength`(옛 `~2시간`은 `1~2시간`으로 표시, 옛 `prefGenres`는 안 읽음). 중첩 필드는 `setProfileField(uid, "played.<id>", value)`, `null`이면 삭제.
 - `guests/{id}`: 미가입 친구(`name`, `owned`, `createdBy`), 로그인한 누구나 읽고 씀. 보유자로만 쓰이고 `rentals` 키가 될 수 있음. 보유자는 프로필+guest를 합친 `Owner`(`useGameHelpers().ownersOf`). guest가 가입하면 `owned`와 `rentals` 키를 회원으로 옮겨야 하는데 화면 기능은 없음(콘솔에서).
+- `notices/{id}`: 전체 공지 `{uid, name, text(≤300), createdAt}`. 회원 누구나 쓰고 지우는 건 쓴 사람만. 화면은 최근 2주만 보여 줌.
+- `pushTokens/{FCM 토큰}`: `{uid, updatedAt}`. 회원이 자기 uid로만 쓰고 아무도 못 읽음. `pushLog`는 규칙에 없어 앱에서 접근 불가(서비스 계정 전용). 새 컬렉션은 규칙에 match가 없으면 막힘.
 - `events/{id}`: `hostUid`, `gameId`, `date`(`YYYY-MM-DD`), `participants.{uid}: name`. 주최자는 전부 수정, 다른 사람은 `participants`의 자기 uid만 추가·삭제(쓰기 형태를 바꾸면 규칙 확인). 공유 링크 `/schedule/<id>`는 일정 모달(`SchedulePage`, 지워진 일정 판별에 `eventsReady`). 지난 모임 "다녀왔어요"는 각자 자기 `played.<gameId>`에 모임 날짜로 기록.
 - 표시 이름: `nickname` → `googleName`(`lib/format.ts`의 `displayName`).
