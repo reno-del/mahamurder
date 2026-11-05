@@ -9,8 +9,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Firebase 프로젝트 `mahamuder`, https://mahamuder.web.app · GitHub `reno-del/mahamurder`(철자 다름)
 - 브랜치는 `main` 하나, 배포도 `main`. 빌드 없던 옛 버전은 커밋 `474506c`, 지운 RAG 챗봇·Remotion 영상은 `dc16ae4` 이전 기록(배포된 함수 없음).
 - 커밋 이메일은 `85153521+reno-del@users.noreply.github.com`(레포 설정). 옛 `giwan328@naver.com` 금지.
-- 라우팅: `BrowserRouter`(라우트 `main.tsx`, 메뉴 `components/Layout.tsx`). 옛 해시 주소(`#/games`)는 `main.tsx`가 렌더링 전에 바꿈. `/games/<id>`는 목록 위 상세 모달(닫으면 `/games`), 다른 페이지의 게임 상세는 주소를 안 바꾸는 모달. Hosting은 `cleanUrls` + `**` → `/index.html`.
-- 문서: `README.md`, `feature-overview.html`, `feature-guide.html`(번호 핀)이 `shots/*.png`(데모 화면 1920×1080)를 씀 → Artifact로 올릴 때 `shots/*` 함께. 화면이 바뀌면 `npm run dev:demo`에서 뷰포트 1280×720·`deviceScaleFactor` 1.5, `.demo-banner` 숨기고 다시 찍고, 핀은 `getBoundingClientRect()` %로 맞춤. 기획은 `docs/PRD-*.md`(남은 것은 7절 "열린 질문").
+- 라우팅: `BrowserRouter`(라우트 `main.tsx`, 메뉴 `components/Layout.tsx`). 옛 해시 주소(`#/games`)는 `main.tsx`가 렌더링 전에 바꿈. `/games/<id>`는 목록 위 상세 모달(닫으면 `/games`), 다른 페이지의 게임 상세는 주소를 안 바꾸는 모달. Hosting은 `cleanUrls` + `**` → `/index.html`. 메뉴 순서는 사용 설명서(`/guide`)·마이페이지·게임 소개·일정·보유·오늘 뭐 하지인데, 기본 경로·로고·PWA `start_url`은 `/games`.
+- 문서: `README.md`, `feature-overview.html`, `feature-guide.html`(번호 핀)이 `shots/*.png`(데모 화면 1920×1080)를 씀 → Artifact로 올릴 때 `shots/*` 함께. 화면이 바뀌면 `npm run dev:demo`에서 뷰포트 1280×720·`deviceScaleFactor` 1.5, `.demo-banner` 숨기고 다시 찍고, 핀은 `getBoundingClientRect()` %로 맞춤. 한 장짜리 사용 설명서는 `usage-guide.html`(1600px, `shots/*`·`public/icon-192.png` 사용) → 1.5배로 렌더링한 `usage-guide.png`. 이 PNG를 `public/usage-guide.png`에도 복사해야 `/guide`(`pages/guide/GuidePage.tsx`)에 반영됨. 기획은 `docs/PRD-*.md`(남은 것은 7절 "열린 질문").
 - 테스트·린트 없음. 검증은 `npm run typecheck` + 브라우저(쓰기 기능은 `dev:demo`, `.claude/launch.json`의 `dev-demo` 포트 5173).
 - 데모 데이터는 localStorage `mm_games`·`mm_users`·`mm_guests`·`mm_events`·`mm_notices`(배열 아닌 `{ id: 문서 }`)와 `mm_me`, 알림 켜짐 표시 `mm_push`. 기본 게임은 4개뿐이라 여러 친구가 필요한 화면은 직접 채워 테스트. 일정은 기본값이 없음 → `mm_events`에 `{ id, hostUid, hostName, gameId, gameName, date, time, place, minPlayers, maxPlayers, participants: { uid: name } }`를 넣고 `/schedule/<id>`로 열기(`mm_me.uid`가 기본 `u1`).
 
@@ -30,7 +30,7 @@ npm run deploy                     # hosting → firestore
 
 **배포**
 - 순서는 항상 hosting → firestore(규칙이 먼저면 예전 화면의 게임 추가가 실패).
-- `main`에 push하면 `.github/workflows/deploy.yml`이 같은 순서로 배포(문서·스크린샷·CSV만 바뀌면 건너뜀, 수동 실행 가능). push 후 `gh run watch <id> --repo reno-del/mahamurder --exit-status`, `gh run view <id> --log`에 `게임 N개를 ... 만들어요`가 있는지 확인.
+- `main`에 push하면 `.github/workflows/deploy.yml`이 같은 순서로 배포(`shots/**`·`**.md`·`feature-*.html`·CSV만 바뀌면 건너뜀. `usage-guide.*`·`public/`은 배포됨. 수동 실행 가능). push 후 `gh run watch <id> --repo reno-del/mahamurder --exit-status`, `gh run view <id> --log`에 `게임 N개를 ... 만들어요`가 있는지 확인.
 - 비밀값 `FIREBASE_SERVICE_ACCOUNT`(서비스 계정 `firebase-adminsdk-fbsvc@mahamuder.iam.gserviceaccount.com` 키). 재등록: 콘솔에서 받은 키 경로를 `.env.secret`에 적고 `node scripts/set-deploy-secret.mjs`. 이 계정에는 서비스 사용량 소비자·Firebase 규칙 관리자·Cloud Datastore 색인 관리자 역할이 추가돼 있어야 함(없으면 403).
 - 알림 워크플로 수동 실행: `gh workflow run push.yml --repo reno-del/mahamurder`, 로그에 `새로 보낼 것 N개`. 같은 서비스 계정으로 FCM v1 발송도 됨(역할 추가 불필요). 저장소에 60일간 커밋이 없으면 예약 실행이 꺼짐.
 - workflow 파일 push에는 `gh` 토큰의 `workflow` 권한 필요(`gh auth refresh -s workflow`).
@@ -42,7 +42,7 @@ npm run deploy                     # hosting → firestore
 - `git` `C:\Program Files\Git\cmd`, Node 24 `C:\Program Files\nodejs`, `gh` `C:\Program Files\GitHub CLI`. PATH에 없으면 `$env:PATH = "C:\Program Files\nodejs;$env:APPDATA\npm;$env:PATH"`.
 - Firebase CLI는 Claude 앱 AppData(`C:\Users\admin\AppData\Local\Packages\Claude_pzs8sxrjxfjjc\LocalCache\Roaming\npm\firebase.cmd`)에 있어 터미널 패널에서는 전체 경로로 실행. `gh` 로그인도 터미널 패널에선 안 보이므로 브라우저 승인 명령은 Claude 셸에서 백그라운드로 돌리고 코드를 사용자에게 전달. firebase 로그인은 `somanbg@gmail.com`(`~/.config/configstore`).
 - 샌드박스 셸에선 Firebase 로그인·전역 npm이 안 보임 → `npm`, `firebase`, `git push`, `gh`는 샌드박스 밖에서. 네트워크 없이 빌드하면 게임 페이지가 빠진 결과가 나오니 로그의 `게임 N개를 ... 만들어요`를 확인. `dist/`를 안 건드리고 확인할 땐 `npx vite build --outDir <스크래치> --emptyOutDir`. `build-preview`·`hosting-local`은 `dist/`만 열므로 스크래치 빌드를 보려면 `dist/`에 복사(`dist/`는 gitignore).
-- Python은 3.14뿐 → 일괄 스크립트는 node로(skill-creator의 python 스크립트도 node로 옮겨 씀). `ffmpeg` 없음. 헤드리스 브라우저는 Edge(`C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe`) + `puppeteer-core`.
+- Python은 3.14뿐 → 일괄 스크립트는 node로(skill-creator의 python 스크립트도 node로 옮겨 씀). `ffmpeg` 없음. 헤드리스 브라우저는 Edge(`C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe`). `puppeteer-core`는 설치돼 있지 않음 → Edge를 `--headless=new --remote-debugging-port=<포트> --user-data-dir=<임시>`로 띄우고 Node 내장 `WebSocket`으로 CDP 호출(`Emulation.setDeviceMetricsOverride`로 배율 지정, `scrollHeight`만큼 `Page.captureScreenshot` + `captureBeyondViewport`).
 - Java가 없어 Firestore 에뮬레이터 불가. 규칙은 `firebase deploy --only firestore:rules --dry-run`(샌드박스 밖)으로 컴파일만 확인하고 `[W]` 경고도 볼 것. 규칙 Set엔 `toList()`가 없어 map의 바뀐 키 값은 검사 못 함. 검증 추가 전엔 공개 REST(`https://firestore.googleapis.com/v1/projects/mahamuder/databases/(default)/documents/games?pageSize=300`)로 기존 문서가 통과하는지 확인.
 - 모드별 env: `node -e "import('vite').then(v=>console.log(v.loadEnv('demo','.','VITE_')))"`(`.env` 위에 `.env.demo`).
 - Node에서 `.ts`는 `import type`만 쓰는 파일(`category.ts` 등)만 바로 import 가능(`csvGames.ts`·`seo.ts`는 `ERR_MODULE_NOT_FOUND`). 경로는 `file:///C:/...`.
