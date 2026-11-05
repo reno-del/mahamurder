@@ -194,6 +194,7 @@ function llmsTxt(games: BuiltGame[]) {
     "",
     "## 주요 화면",
     "",
+    `- [사용 설명서](${SITE.url}guide): 가입, 홈 화면 앱 설치, 알림 켜기, 메뉴별 기능을 한 장으로 정리`,
     `- [게임 소개](${SITE.url}games): 분류·인원·정발 여부·보유 여부로 게임 검색, 친구 평점`,
     `- [일정 모집](${SITE.url}schedule): 달력으로 모임 일정을 만들고 참가`,
     `- [보유 게임](${SITE.url}library): 친구별 보유 게임과 대여 현황`,

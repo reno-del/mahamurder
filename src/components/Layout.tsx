@@ -46,11 +46,12 @@ export function Layout({ children }: { children: ReactNode }) {
           <span className="brand-mark">🔍</span> 머더미스터리 클럽
         </Link>
         <nav className="nav">
+          <NavLink to="/guide">사용 설명서</NavLink>
+          <NavLink to="/mypage">마이페이지</NavLink>
           <NavLink to="/games">게임 소개</NavLink>
           <NavLink to="/schedule">일정 모집</NavLink>
           <NavLink to="/library">보유 게임</NavLink>
           <NavLink to="/tonight">오늘 뭐 하지</NavLink>
-          <NavLink to="/mypage">마이페이지</NavLink>
         </nav>
         <AuthBox />
       </header>

@@ -10,6 +10,7 @@ import { MyPage } from "./pages/mypage/MyPage";
 import { LibraryPage } from "./pages/library/LibraryPage";
 import { JoinPage } from "./pages/join/JoinPage";
 import { TonightPage } from "./pages/tonight/TonightPage";
+import { GuidePage } from "./pages/guide/GuidePage";
 import "./styles/style.css";
 
 // 예전 해시 주소(#/games, #/schedule/new/<id> 등)로 들어오면 같은 경로 주소로 바꾼다.
@@ -39,6 +40,7 @@ createRoot(document.getElementById("root")!).render(
           <ScrollToTop />
           <Layout>
             <Routes>
+              <Route path="/guide" element={<GuidePage />} />
               <Route path="/games" element={<GamesPage />} />
               <Route path="/games/:gameId" element={<GamesPage />} />
               <Route path="/schedule" element={<SchedulePage />} />
